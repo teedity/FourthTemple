@@ -1,21 +1,17 @@
 const TEMPLE_ARROW_CURSOR = [
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-  [1, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
-  [1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0],
-  [1, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0],
-  [1, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0],
-  [1, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0],
-  [1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-  [1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-  [1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1],
-  [1, 2, 2, 1, 2, 2, 1, 0, 0, 0, 0],
-  [1, 2, 1, 0, 1, 2, 2, 1, 0, 0, 0],
-  [1, 1, 0, 0, 1, 2, 2, 1, 0, 0, 0],
-  [1, 0, 0, 0, 0, 1, 2, 2, 1, 0, 0],
-  [0, 0, 0, 0, 0, 1, 2, 2, 1, 0, 0],
-  [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+  [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0],
+  [2, 2, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+  [2, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [2, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+  [2, 1, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0],
+  [2, 1, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0],
+  [2, 1, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0],
+  [2, 1, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0],
+  [2, 1, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0],
+  [2, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2]
 ];
 
 const LUA_CONTROL_KEYWORDS = new Set([
@@ -38,10 +34,12 @@ const LUA_KEYWORDS = new Set([
 ]);
 
 const LUA_BUILTINS = new Set([
-  'socket', 'require', 'print', 'tostring', 'tonumber', 'pairs', 'ipairs',
-  'string', 'table', 'math', 'os', 'gfx', 'tcp', 'udp', 'http', 'dns',
-  'connect', 'send', 'receive', 'bind', 'close', 'on_request', 'type',
-  'assert', 'error', 'pcall'
+  'io', 'string', 'table', 'math', 'os', 'coroutine', 'utf8', 'bit32',
+  'debug', 'package', 'print', 'tostring', 'tonumber', 'type', 'pairs',
+  'ipairs', 'next', 'select', 'unpack', 'pcall', 'xpcall', 'assert',
+  'error', 'setmetatable', 'getmetatable', 'rawget', 'rawset', 'rawequal',
+  'rawlen', 'collectgarbage', 'load', 'loadstring', 'loadfile', 'dofile',
+  'require', 'socket', 'gfx', 'read', 'write', 'open', 'lines', 'flush'
 ]);
 
 const AUTO_CLOSE_PAIRS = {
@@ -56,42 +54,175 @@ const CLOSING_CHARS = new Set([')', ']', '}', '"', "'"]);
 
 const VSCODE_LUA_SUGGESTIONS = {
   global: [
-    { label: 'local', insert: 'local ', kind: 'kw', cursorOffset: 0 },
-    { label: 'function', insert: 'function ', kind: 'kw', cursorOffset: 0 },
-    { label: 'if', insert: 'if ', kind: 'kw', cursorOffset: 0 },
-    { label: 'then', insert: 'then', kind: 'kw', cursorOffset: 0 },
-    { label: 'elseif', insert: 'elseif ', kind: 'kw', cursorOffset: 0 },
-    { label: 'else', insert: 'else', kind: 'kw', cursorOffset: 0 },
-    { label: 'end', insert: 'end', kind: 'kw', cursorOffset: 0 },
-    { label: 'for', insert: 'for ', kind: 'kw', cursorOffset: 0 },
-    { label: 'in', insert: 'in ', kind: 'kw', cursorOffset: 0 },
-    { label: 'while', insert: 'while ', kind: 'kw', cursorOffset: 0 },
-    { label: 'do', insert: 'do', kind: 'kw', cursorOffset: 0 },
-    { label: 'repeat', insert: 'repeat', kind: 'kw', cursorOffset: 0 },
-    { label: 'until', insert: 'until ', kind: 'kw', cursorOffset: 0 },
-    { label: 'return', insert: 'return ', kind: 'kw', cursorOffset: 0 },
-    { label: 'break', insert: 'break', kind: 'kw', cursorOffset: 0 },
-    { label: 'and', insert: 'and ', kind: 'kw', cursorOffset: 0 },
-    { label: 'or', insert: 'or ', kind: 'kw', cursorOffset: 0 },
-    { label: 'not', insert: 'not ', kind: 'kw', cursorOffset: 0 },
-    { label: 'true', insert: 'true', kind: 'kw', cursorOffset: 0 },
-    { label: 'false', insert: 'false', kind: 'kw', cursorOffset: 0 },
-    { label: 'nil', insert: 'nil', kind: 'kw', cursorOffset: 0 },
-    { label: 'require', insert: 'require("socket")', kind: 'fn', cursorOffset: -2 },
-    { label: 'print', insert: 'print()', kind: 'fn', cursorOffset: -1 },
-    { label: 'tostring', insert: 'tostring()', kind: 'fn', cursorOffset: -1 },
-    { label: 'tonumber', insert: 'tonumber()', kind: 'fn', cursorOffset: -1 },
+    { label: 'local', insert: 'local ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'function', insert: 'function ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'if', insert: 'if ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'then', insert: 'then', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'elseif', insert: 'elseif ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'else', insert: 'else', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'end', insert: 'end', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'for', insert: 'for ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'in', insert: 'in ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'while', insert: 'while ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'do', insert: 'do', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'repeat', insert: 'repeat', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'until', insert: 'until ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'return', insert: 'return ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'break', insert: 'break', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'and', insert: 'and ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'or', insert: 'or ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'not', insert: 'not ', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'true', insert: 'true', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'false', insert: 'false', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'nil', insert: 'nil', kind: 'kw', cursorOffset: 0, rank: 2 },
+    { label: 'print', insert: 'print()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'io', insert: 'io', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'string', insert: 'string', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'table', insert: 'table', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'math', insert: 'math', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'os', insert: 'os', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'coroutine', insert: 'coroutine', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'utf8', insert: 'utf8', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'bit32', insert: 'bit32', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'debug', insert: 'debug', kind: 'mod', cursorOffset: 0, rank: 1 },
+    { label: 'tonumber', insert: 'tonumber()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'tostring', insert: 'tostring()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'type', insert: 'type()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'pairs', insert: 'pairs()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'ipairs', insert: 'ipairs()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'next', insert: 'next()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'select', insert: 'select()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'unpack', insert: 'unpack()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'pcall', insert: 'pcall()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'xpcall', insert: 'xpcall()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'assert', insert: 'assert()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'error', insert: 'error()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'setmetatable', insert: 'setmetatable()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'getmetatable', insert: 'getmetatable()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'rawget', insert: 'rawget()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'rawset', insert: 'rawset()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'rawequal', insert: 'rawequal()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'rawlen', insert: 'rawlen()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'collectgarbage', insert: 'collectgarbage()', kind: 'fn', cursorOffset: 0, rank: 1 },
+    { label: 'load', insert: 'load()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'dofile', insert: 'dofile()', kind: 'fn', cursorOffset: -1, rank: 1 },
+    { label: 'require', insert: 'require("")', kind: 'fn', cursorOffset: -2, rank: 1 },
+    { label: 'gfx', insert: 'gfx', kind: 'mod', cursorOffset: 0, rank: 2 }
+  ],
+  'io.': [
+    { label: 'read', insert: 'read()', kind: 'fn', cursorOffset: 0 },
+    { label: 'write', insert: 'write()', kind: 'fn', cursorOffset: -1 },
+    { label: 'open', insert: 'open("file.lua", "r")', kind: 'fn', cursorOffset: -1 },
+    { label: 'lines', insert: 'lines()', kind: 'fn', cursorOffset: -1 },
+    { label: 'flush', insert: 'flush()', kind: 'fn', cursorOffset: 0 },
     { label: 'type', insert: 'type()', kind: 'fn', cursorOffset: -1 },
-    { label: 'pairs', insert: 'pairs()', kind: 'fn', cursorOffset: -1 },
-    { label: 'ipairs', insert: 'ipairs()', kind: 'fn', cursorOffset: -1 },
-    { label: 'assert', insert: 'assert()', kind: 'fn', cursorOffset: -1 },
-    { label: 'error', insert: 'error()', kind: 'fn', cursorOffset: -1 },
-    { label: 'socket', insert: 'socket', kind: 'mod', cursorOffset: 0 },
-    { label: 'string', insert: 'string', kind: 'mod', cursorOffset: 0 },
-    { label: 'table', insert: 'table', kind: 'mod', cursorOffset: 0 },
-    { label: 'math', insert: 'math', kind: 'mod', cursorOffset: 0 },
-    { label: 'os', insert: 'os', kind: 'mod', cursorOffset: 0 },
-    { label: 'gfx', insert: 'gfx', kind: 'mod', cursorOffset: 0 }
+    { label: 'popen', insert: 'popen()', kind: 'fn', cursorOffset: -1 },
+    { label: 'tmpfile', insert: 'tmpfile()', kind: 'fn', cursorOffset: 0 },
+    { label: 'input', insert: 'input()', kind: 'fn', cursorOffset: 0 },
+    { label: 'output', insert: 'output()', kind: 'fn', cursorOffset: 0 },
+    { label: 'stdin', insert: 'stdin', kind: 'var', cursorOffset: 0 },
+    { label: 'stdout', insert: 'stdout', kind: 'var', cursorOffset: 0 },
+    { label: 'stderr', insert: 'stderr', kind: 'var', cursorOffset: 0 }
+  ],
+  'string.': [
+    { label: 'format', insert: 'format()', kind: 'fn', cursorOffset: -1 },
+    { label: 'sub', insert: 'sub()', kind: 'fn', cursorOffset: -1 },
+    { label: 'len', insert: 'len()', kind: 'fn', cursorOffset: -1 },
+    { label: 'upper', insert: 'upper()', kind: 'fn', cursorOffset: -1 },
+    { label: 'lower', insert: 'lower()', kind: 'fn', cursorOffset: -1 },
+    { label: 'find', insert: 'find()', kind: 'fn', cursorOffset: -1 },
+    { label: 'match', insert: 'match()', kind: 'fn', cursorOffset: -1 },
+    { label: 'gmatch', insert: 'gmatch()', kind: 'fn', cursorOffset: -1 },
+    { label: 'gsub', insert: 'gsub()', kind: 'fn', cursorOffset: -1 },
+    { label: 'rep', insert: 'rep()', kind: 'fn', cursorOffset: -1 },
+    { label: 'reverse', insert: 'reverse()', kind: 'fn', cursorOffset: -1 },
+    { label: 'byte', insert: 'byte()', kind: 'fn', cursorOffset: -1 },
+    { label: 'char', insert: 'char()', kind: 'fn', cursorOffset: -1 },
+    { label: 'pack', insert: 'pack()', kind: 'fn', cursorOffset: -1 },
+    { label: 'unpack', insert: 'unpack()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'table.': [
+    { label: 'insert', insert: 'insert()', kind: 'fn', cursorOffset: -1 },
+    { label: 'remove', insert: 'remove()', kind: 'fn', cursorOffset: -1 },
+    { label: 'concat', insert: 'concat()', kind: 'fn', cursorOffset: -1 },
+    { label: 'sort', insert: 'sort()', kind: 'fn', cursorOffset: -1 },
+    { label: 'move', insert: 'move()', kind: 'fn', cursorOffset: -1 },
+    { label: 'pack', insert: 'pack()', kind: 'fn', cursorOffset: -1 },
+    { label: 'unpack', insert: 'unpack()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'math.': [
+    { label: 'floor', insert: 'floor()', kind: 'fn', cursorOffset: -1 },
+    { label: 'ceil', insert: 'ceil()', kind: 'fn', cursorOffset: -1 },
+    { label: 'sqrt', insert: 'sqrt()', kind: 'fn', cursorOffset: -1 },
+    { label: 'abs', insert: 'abs()', kind: 'fn', cursorOffset: -1 },
+    { label: 'random', insert: 'random()', kind: 'fn', cursorOffset: -1 },
+    { label: 'randomseed', insert: 'randomseed()', kind: 'fn', cursorOffset: -1 },
+    { label: 'max', insert: 'max()', kind: 'fn', cursorOffset: -1 },
+    { label: 'min', insert: 'min()', kind: 'fn', cursorOffset: -1 },
+    { label: 'sin', insert: 'sin()', kind: 'fn', cursorOffset: -1 },
+    { label: 'cos', insert: 'cos()', kind: 'fn', cursorOffset: -1 },
+    { label: 'tan', insert: 'tan()', kind: 'fn', cursorOffset: -1 },
+    { label: 'atan', insert: 'atan()', kind: 'fn', cursorOffset: -1 },
+    { label: 'asin', insert: 'asin()', kind: 'fn', cursorOffset: -1 },
+    { label: 'acos', insert: 'acos()', kind: 'fn', cursorOffset: -1 },
+    { label: 'deg', insert: 'deg()', kind: 'fn', cursorOffset: -1 },
+    { label: 'rad', insert: 'rad()', kind: 'fn', cursorOffset: -1 },
+    { label: 'exp', insert: 'exp()', kind: 'fn', cursorOffset: -1 },
+    { label: 'log', insert: 'log()', kind: 'fn', cursorOffset: -1 },
+    { label: 'fmod', insert: 'fmod()', kind: 'fn', cursorOffset: -1 },
+    { label: 'modf', insert: 'modf()', kind: 'fn', cursorOffset: -1 },
+    { label: 'tointeger', insert: 'tointeger()', kind: 'fn', cursorOffset: -1 },
+    { label: 'type', insert: 'type()', kind: 'fn', cursorOffset: -1 },
+    { label: 'ult', insert: 'ult()', kind: 'fn', cursorOffset: -1 },
+    { label: 'pi', insert: 'pi', kind: 'var', cursorOffset: 0 },
+    { label: 'huge', insert: 'huge', kind: 'var', cursorOffset: 0 },
+    { label: 'maxinteger', insert: 'maxinteger', kind: 'var', cursorOffset: 0 },
+    { label: 'mininteger', insert: 'mininteger', kind: 'var', cursorOffset: 0 }
+  ],
+  'os.': [
+    { label: 'clock', insert: 'clock()', kind: 'fn', cursorOffset: 0 },
+    { label: 'time', insert: 'time()', kind: 'fn', cursorOffset: 0 },
+    { label: 'date', insert: 'date()', kind: 'fn', cursorOffset: 0 },
+    { label: 'difftime', insert: 'difftime()', kind: 'fn', cursorOffset: -1 },
+    { label: 'getenv', insert: 'getenv()', kind: 'fn', cursorOffset: -1 },
+    { label: 'remove', insert: 'remove()', kind: 'fn', cursorOffset: -1 },
+    { label: 'rename', insert: 'rename()', kind: 'fn', cursorOffset: -1 },
+    { label: 'tmpname', insert: 'tmpname()', kind: 'fn', cursorOffset: 0 },
+    { label: 'exit', insert: 'exit()', kind: 'fn', cursorOffset: 0 },
+    { label: 'execute', insert: 'execute()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'coroutine.': [
+    { label: 'create', insert: 'create()', kind: 'fn', cursorOffset: -1 },
+    { label: 'resume', insert: 'resume()', kind: 'fn', cursorOffset: -1 },
+    { label: 'yield', insert: 'yield()', kind: 'fn', cursorOffset: -1 },
+    { label: 'wrap', insert: 'wrap()', kind: 'fn', cursorOffset: -1 },
+    { label: 'status', insert: 'status()', kind: 'fn', cursorOffset: -1 },
+    { label: 'running', insert: 'running()', kind: 'fn', cursorOffset: 0 },
+    { label: 'isyieldable', insert: 'isyieldable()', kind: 'fn', cursorOffset: 0 },
+    { label: 'close', insert: 'close()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'utf8.': [
+    { label: 'len', insert: 'len()', kind: 'fn', cursorOffset: -1 },
+    { label: 'char', insert: 'char()', kind: 'fn', cursorOffset: -1 },
+    { label: 'codes', insert: 'codes()', kind: 'fn', cursorOffset: -1 },
+    { label: 'codepoint', insert: 'codepoint()', kind: 'fn', cursorOffset: -1 },
+    { label: 'offset', insert: 'offset()', kind: 'fn', cursorOffset: -1 },
+    { label: 'charpattern', insert: 'charpattern', kind: 'var', cursorOffset: 0 }
+  ],
+  'bit32.': [
+    { label: 'band', insert: 'band()', kind: 'fn', cursorOffset: -1 },
+    { label: 'bor', insert: 'bor()', kind: 'fn', cursorOffset: -1 },
+    { label: 'bxor', insert: 'bxor()', kind: 'fn', cursorOffset: -1 },
+    { label: 'bnot', insert: 'bnot()', kind: 'fn', cursorOffset: -1 },
+    { label: 'lshift', insert: 'lshift()', kind: 'fn', cursorOffset: -1 },
+    { label: 'rshift', insert: 'rshift()', kind: 'fn', cursorOffset: -1 },
+    { label: 'arshift', insert: 'arshift()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'debug.': [
+    { label: 'traceback', insert: 'traceback()', kind: 'fn', cursorOffset: 0 },
+    { label: 'getinfo', insert: 'getinfo()', kind: 'fn', cursorOffset: -1 },
+    { label: 'getmetatable', insert: 'getmetatable()', kind: 'fn', cursorOffset: -1 },
+    { label: 'setmetatable', insert: 'setmetatable()', kind: 'fn', cursorOffset: -1 }
   ],
   'socket.': [
     { label: 'tcp', insert: 'tcp()', kind: 'fn', cursorOffset: 0 },
@@ -111,42 +242,6 @@ const VSCODE_LUA_SUGGESTIONS = {
     { label: 'toip', insert: 'toip("localhost")', kind: 'fn', cursorOffset: -2 },
     { label: 'gethostname', insert: 'gethostname()', kind: 'fn', cursorOffset: 0 }
   ],
-  'string.': [
-    { label: 'upper', insert: 'upper()', kind: 'fn', cursorOffset: -1 },
-    { label: 'lower', insert: 'lower()', kind: 'fn', cursorOffset: -1 },
-    { label: 'sub', insert: 'sub()', kind: 'fn', cursorOffset: -1 },
-    { label: 'len', insert: 'len()', kind: 'fn', cursorOffset: -1 },
-    { label: 'find', insert: 'find()', kind: 'fn', cursorOffset: -1 },
-    { label: 'gsub', insert: 'gsub()', kind: 'fn', cursorOffset: -1 },
-    { label: 'format', insert: 'format()', kind: 'fn', cursorOffset: -1 },
-    { label: 'rep', insert: 'rep()', kind: 'fn', cursorOffset: -1 },
-    { label: 'reverse', insert: 'reverse()', kind: 'fn', cursorOffset: -1 },
-    { label: 'byte', insert: 'byte()', kind: 'fn', cursorOffset: -1 },
-    { label: 'char', insert: 'char()', kind: 'fn', cursorOffset: -1 }
-  ],
-  'table.': [
-    { label: 'insert', insert: 'insert()', kind: 'fn', cursorOffset: -1 },
-    { label: 'remove', insert: 'remove()', kind: 'fn', cursorOffset: -1 },
-    { label: 'concat', insert: 'concat()', kind: 'fn', cursorOffset: -1 }
-  ],
-  'math.': [
-    { label: 'floor', insert: 'floor()', kind: 'fn', cursorOffset: -1 },
-    { label: 'ceil', insert: 'ceil()', kind: 'fn', cursorOffset: -1 },
-    { label: 'sqrt', insert: 'sqrt()', kind: 'fn', cursorOffset: -1 },
-    { label: 'sin', insert: 'sin()', kind: 'fn', cursorOffset: -1 },
-    { label: 'cos', insert: 'cos()', kind: 'fn', cursorOffset: -1 },
-    { label: 'abs', insert: 'abs()', kind: 'fn', cursorOffset: -1 },
-    { label: 'random', insert: 'random()', kind: 'fn', cursorOffset: -1 },
-    { label: 'max', insert: 'max()', kind: 'fn', cursorOffset: -1 },
-    { label: 'min', insert: 'min()', kind: 'fn', cursorOffset: -1 },
-    { label: 'pi', insert: 'pi', kind: 'var', cursorOffset: 0 }
-  ],
-  'os.': [
-    { label: 'clock', insert: 'clock()', kind: 'fn', cursorOffset: 0 },
-    { label: 'time', insert: 'time()', kind: 'fn', cursorOffset: 0 },
-    { label: 'date', insert: 'date()', kind: 'fn', cursorOffset: 0 },
-    { label: 'difftime', insert: 'difftime()', kind: 'fn', cursorOffset: -1 }
-  ],
   'gfx.': [
     { label: 'pset', insert: 'pset(x, y, 1)', kind: 'fn', cursorOffset: -1 },
     { label: 'line', insert: 'line(x1, y1, x2, y2, 1)', kind: 'fn', cursorOffset: -1 },
@@ -156,10 +251,27 @@ const VSCODE_LUA_SUGGESTIONS = {
     { label: 'clear', insert: 'clear()', kind: 'fn', cursorOffset: 0 }
   ],
   ':': [
+    { label: 'read', insert: 'read("*l")', kind: 'fn', cursorOffset: -2 },
+    { label: 'write', insert: 'write()', kind: 'fn', cursorOffset: -1 },
+    { label: 'lines', insert: 'lines()', kind: 'fn', cursorOffset: 0 },
+    { label: 'seek', insert: 'seek("set", 0)', kind: 'fn', cursorOffset: -1 },
+    { label: 'flush', insert: 'flush()', kind: 'fn', cursorOffset: 0 },
+    { label: 'close', insert: 'close()', kind: 'fn', cursorOffset: 0 },
+    { label: 'upper', insert: 'upper()', kind: 'fn', cursorOffset: 0 },
+    { label: 'lower', insert: 'lower()', kind: 'fn', cursorOffset: 0 },
+    { label: 'sub', insert: 'sub(1, 1)', kind: 'fn', cursorOffset: -1 },
+    { label: 'find', insert: 'find("")', kind: 'fn', cursorOffset: -2 },
+    { label: 'match', insert: 'match("")', kind: 'fn', cursorOffset: -2 },
+    { label: 'gmatch', insert: 'gmatch("")', kind: 'fn', cursorOffset: -2 },
+    { label: 'gsub', insert: 'gsub("", "")', kind: 'fn', cursorOffset: -2 },
+    { label: 'format', insert: 'format()', kind: 'fn', cursorOffset: -1 },
+    { label: 'rep', insert: 'rep(2)', kind: 'fn', cursorOffset: -1 },
+    { label: 'reverse', insert: 'reverse()', kind: 'fn', cursorOffset: 0 },
+    { label: 'byte', insert: 'byte(1)', kind: 'fn', cursorOffset: -1 },
+    { label: 'len', insert: 'len()', kind: 'fn', cursorOffset: 0 },
     { label: 'connect', insert: 'connect("127.0.0.1", 9090)', kind: 'fn', cursorOffset: -1 },
     { label: 'send', insert: 'send()', kind: 'fn', cursorOffset: -1 },
     { label: 'receive', insert: 'receive("*l")', kind: 'fn', cursorOffset: -2 },
-    { label: 'close', insert: 'close()', kind: 'fn', cursorOffset: 0 },
     { label: 'settimeout', insert: 'settimeout(2)', kind: 'fn', cursorOffset: -1 },
     { label: 'getpeername', insert: 'getpeername()', kind: 'fn', cursorOffset: 0 },
     { label: 'getsockname', insert: 'getsockname()', kind: 'fn', cursorOffset: 0 },
@@ -205,6 +317,11 @@ class TempleTerminal {
     this.historyIndex = this.history.length;
     this.busy = false;
 
+    this.waitingForStdin = false;
+    this.stdinResolve = null;
+    this.stdinPrefix = '';
+    this.inlineWriteBuffer = '';
+
     this.mode = 'SHELL';
     this.edFilename = 'mrrobot.lua';
     this.edLines = [''];
@@ -235,6 +352,15 @@ class TempleTerminal {
     this.flashPhase = false;
     this.spinPixelOffset = 0;
     this.orbitAngle = 0;
+    this.portRotX = 0.1;
+    this.portRotY = 0.0;
+    this.portRotZ = 0.0;
+    this.portVelX = 0.008;
+    this.portVelY = 0.024;
+    this.portVelZ = 0.005;
+    this.portTargetVelX = 0.012;
+    this.portTargetVelY = 0.028;
+    this.portTargetVelZ = -0.006;
     this.frameCount = 0;
 
     this.lua = new window.TempleLuaCompiler(this);
@@ -250,6 +376,36 @@ class TempleTerminal {
     const scale = Math.max(1, Math.min(scaleX, scaleY));
     this.canvas.style.width = `${Math.floor(640 * scale)}px`;
     this.canvas.style.height = `${Math.floor(480 * scale)}px`;
+  }
+
+  requestStdinLine() {
+    return new Promise((resolve) => {
+      this.waitingForStdin = true;
+      this.stdinPrefix = this.inlineWriteBuffer || '';
+      this.inlineWriteBuffer = '';
+      this.inputBuffer = '';
+      this.cursorPos = 0;
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
+      this.scrollOffset = 0;
+      this.stdinResolve = resolve;
+    });
+  }
+
+  writeInline(text) {
+    const combined = this.inlineWriteBuffer + String(text ?? '');
+    const parts = combined.split('\n');
+    for (let i = 0; i < parts.length - 1; i++) {
+      this.lines.push({ text: parts[i].slice(0, 54), fg: this.defaultFg, bg: this.defaultBg });
+    }
+    this.inlineWriteBuffer = parts[parts.length - 1];
+  }
+
+  flushInlineWrite() {
+    if (this.inlineWriteBuffer) {
+      this.printLine(this.inlineWriteBuffer);
+      this.inlineWriteBuffer = '';
+    }
   }
 
   screenToEditorPos(col, row) {
@@ -451,7 +607,7 @@ class TempleTerminal {
       return;
     }
 
-    if (this.mode === 'SHELL' && col >= 57 && col <= 78) {
+    if (this.mode === 'SHELL' && !this.waitingForStdin && col >= 57 && col <= 78) {
       if (row === 4) {
         this.inputBuffer = 'CREATE ';
         this.cursorPos = this.inputBuffer.length;
@@ -474,7 +630,7 @@ class TempleTerminal {
       }
       const files = Object.keys(this.lua.files).sort();
       const fileIdx = row - 14;
-      if (fileIdx >= 0 && fileIdx < Math.min(files.length, 20)) {
+      if (fileIdx >= 0 && fileIdx < Math.min(files.length, 12)) {
         const target = files[fileIdx];
         this.inputBuffer = `EXECUTE ${target}`;
         this.cursorPos = this.inputBuffer.length;
@@ -527,7 +683,7 @@ class TempleTerminal {
   }
 
   async handleShellKey(e) {
-    if (this.busy) return;
+    if (this.busy && !this.waitingForStdin) return;
 
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
       e.preventDefault();
@@ -550,6 +706,18 @@ class TempleTerminal {
         return;
       }
       e.preventDefault();
+      if (this.waitingForStdin && this.stdinResolve) {
+        const activePfx = this.stdinPrefix;
+        const resolver = this.stdinResolve;
+        this.waitingForStdin = false;
+        this.stdinResolve = null;
+        this.stdinPrefix = '';
+        this.printLine(`${activePfx}${this.inputBuffer}^C`, 8, 15);
+        this.inputBuffer = '';
+        this.cursorPos = 0;
+        resolver('');
+        return;
+      }
       this.printLine(`${this.promptText}${this.inputBuffer}^C`, 8, 15);
       this.inputBuffer = '';
       this.cursorPos = 0;
@@ -579,7 +747,7 @@ class TempleTerminal {
       return;
     }
 
-    if (e.key === 'Tab') {
+    if (e.key === 'Tab' && !this.waitingForStdin) {
       e.preventDefault();
       const trimmed = this.inputBuffer.trimStart();
       const parts = trimmed.split(/\s+/);
@@ -607,6 +775,22 @@ class TempleTerminal {
 
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (this.waitingForStdin && this.stdinResolve) {
+        const entered = this.inputBuffer;
+        const pfx = this.stdinPrefix;
+        const resolver = this.stdinResolve;
+        this.waitingForStdin = false;
+        this.stdinResolve = null;
+        this.stdinPrefix = '';
+        this.inputBuffer = '';
+        this.cursorPos = 0;
+        this.shellSelStart = null;
+        this.shellSelEnd = null;
+        this.printLine(`${pfx}${entered}`, 0, 15);
+        resolver(entered);
+        return;
+      }
+
       const code = this.inputBuffer;
       this.printLine(`${this.promptText}${code}`, 1, 15);
       if (code.trim() && this.history[this.history.length - 1] !== code) {
@@ -621,6 +805,7 @@ class TempleTerminal {
 
       this.busy = true;
       await this.lua.executeCommandOrLua(code);
+      this.flushInlineWrite();
       this.busy = false;
       return;
     }
@@ -631,7 +816,7 @@ class TempleTerminal {
       if (this.cursorPos > 0) {
         const prevCh = this.inputBuffer[this.cursorPos - 1];
         const nextCh = this.inputBuffer[this.cursorPos];
-        if (AUTO_CLOSE_PAIRS[prevCh] && AUTO_CLOSE_PAIRS[prevCh] === nextCh) {
+        if (!this.waitingForStdin && AUTO_CLOSE_PAIRS[prevCh] && AUTO_CLOSE_PAIRS[prevCh] === nextCh) {
           this.inputBuffer =
             this.inputBuffer.slice(0, this.cursorPos - 1) +
             this.inputBuffer.slice(this.cursorPos + 1);
@@ -701,7 +886,7 @@ class TempleTerminal {
       return;
     }
 
-    if (e.key === 'ArrowUp') {
+    if (e.key === 'ArrowUp' && !this.waitingForStdin) {
       e.preventDefault();
       this.shellSelStart = null;
       this.shellSelEnd = null;
@@ -713,7 +898,7 @@ class TempleTerminal {
       return;
     }
 
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown' && !this.waitingForStdin) {
       e.preventDefault();
       this.shellSelStart = null;
       this.shellSelEnd = null;
@@ -729,19 +914,21 @@ class TempleTerminal {
       e.preventDefault();
       this.deleteShellSelection();
       const ch = e.key;
-      const nextCh = this.inputBuffer[this.cursorPos];
-      if (CLOSING_CHARS.has(ch) && nextCh === ch) {
-        this.cursorPos++;
-        return;
-      }
-      if (AUTO_CLOSE_PAIRS[ch]) {
-        const closeCh = AUTO_CLOSE_PAIRS[ch];
-        this.inputBuffer =
-          this.inputBuffer.slice(0, this.cursorPos) +
-          ch + closeCh +
-          this.inputBuffer.slice(this.cursorPos);
-        this.cursorPos++;
-        return;
+      if (!this.waitingForStdin) {
+        const nextCh = this.inputBuffer[this.cursorPos];
+        if (CLOSING_CHARS.has(ch) && nextCh === ch) {
+          this.cursorPos++;
+          return;
+        }
+        if (AUTO_CLOSE_PAIRS[ch]) {
+          const closeCh = AUTO_CLOSE_PAIRS[ch];
+          this.inputBuffer =
+            this.inputBuffer.slice(0, this.cursorPos) +
+            ch + closeCh +
+            this.inputBuffer.slice(this.cursorPos);
+          this.cursorPos++;
+          return;
+        }
       }
       this.inputBuffer =
         this.inputBuffer.slice(0, this.cursorPos) +
@@ -883,9 +1070,55 @@ class TempleTerminal {
   }
 
   collectDocumentSymbols() {
-    const found = new Map();
+    const symbols = new Map();
+    const tableMembers = new Map();
+
     for (let r = 0; r < this.edLines.length; r++) {
-      const line = this.edLines[r];
+      const rawLine = this.edLines[r];
+      const line = rawLine.replace(/--.*$/, '');
+
+      const fnMatches = line.matchAll(/\bfunction\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:([.:])([a-zA-Z_][a-zA-Z0-9_]*))?\s*\(/g);
+      for (const fm of fnMatches) {
+        const baseName = fm[1];
+        const sep = fm[2];
+        const subName = fm[3];
+        if (!LUA_KEYWORDS.has(baseName) && !LUA_BUILTINS.has(baseName)) {
+          symbols.set(baseName, {
+            label: baseName,
+            insert: subName ? baseName : `${baseName}()`,
+            kind: subName ? 'tbl' : 'fn',
+            cursorOffset: subName ? 0 : -1,
+            rank: 0
+          });
+        }
+        if (subName) {
+          const key = `${baseName}${sep}`;
+          if (!tableMembers.has(key)) tableMembers.set(key, new Map());
+          tableMembers.get(key).set(subName, {
+            label: subName,
+            insert: `${subName}()`,
+            kind: 'fn',
+            cursorOffset: -1,
+            rank: 0
+          });
+        }
+      }
+
+      const propAssignMatches = line.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g);
+      for (const pm of propAssignMatches) {
+        const tbl = pm[1];
+        const field = pm[2];
+        const key = `${tbl}.`;
+        if (!tableMembers.has(key)) tableMembers.set(key, new Map());
+        tableMembers.get(key).set(field, {
+          label: field,
+          insert: field,
+          kind: 'var',
+          cursorOffset: 0,
+          rank: 0
+        });
+      }
+
       const matches = line.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g);
       for (const m of matches) {
         const word = m[1];
@@ -894,12 +1127,22 @@ class TempleTerminal {
         if (r === this.edRow && m.index <= this.edCol && m.index + word.length >= this.edCol) {
           continue;
         }
-        if (!found.has(word)) {
-          found.set(word, { label: word, insert: word, kind: 'var', cursorOffset: 0 });
+        if (!symbols.has(word)) {
+          symbols.set(word, {
+            label: word,
+            insert: word,
+            kind: 'var',
+            cursorOffset: 0,
+            rank: 0
+          });
         }
       }
     }
-    return Array.from(found.values());
+
+    return {
+      globals: Array.from(symbols.values()),
+      tableMembers
+    };
   }
 
   updateEditorSuggestions(forceOpen = false) {
@@ -910,6 +1153,7 @@ class TempleTerminal {
     const line = this.edLines[this.edRow] || '';
     const before = line.slice(0, this.edCol);
     const prevSelectedLabel = this.suggestions[this.suggestIndex]?.label || null;
+    const docData = this.collectDocumentSymbols();
 
     let pool = [];
     let prefix = '';
@@ -922,22 +1166,27 @@ class TempleTerminal {
       prefix = memberMatch[3];
       startCol = this.edCol - prefix.length;
 
+      const userKey = `${objName}${sep}`;
+      const userMembers = docData.tableMembers.get(userKey)
+        ? Array.from(docData.tableMembers.get(userKey).values())
+        : [];
+
       if (sep === ':') {
-        pool = VSCODE_LUA_SUGGESTIONS[':'] || [];
+        pool = [...userMembers, ...(VSCODE_LUA_SUGGESTIONS[':'] || [])];
       } else {
         const key = `${objName}.`;
-        pool = VSCODE_LUA_SUGGESTIONS[key] || [];
+        pool = [...userMembers, ...(VSCODE_LUA_SUGGESTIONS[key] || [])];
       }
     } else {
       const wordMatch = before.match(/([a-zA-Z_][a-zA-Z0-9_]*)$/);
       if (wordMatch) {
         prefix = wordMatch[1];
         startCol = this.edCol - prefix.length;
-        pool = [...VSCODE_LUA_SUGGESTIONS.global, ...this.collectDocumentSymbols()];
+        pool = [...docData.globals, ...VSCODE_LUA_SUGGESTIONS.global];
       } else if (forceOpen) {
         prefix = '';
         startCol = this.edCol;
-        pool = [...VSCODE_LUA_SUGGESTIONS.global, ...this.collectDocumentSymbols()];
+        pool = [...docData.globals, ...VSCODE_LUA_SUGGESTIONS.global];
       }
     }
 
@@ -949,13 +1198,25 @@ class TempleTerminal {
     }
 
     const lowPrefix = prefix.toLowerCase();
+    const seen = new Set();
     const filtered = pool
       .filter(item => {
-        if (!lowPrefix) return true;
+        if (seen.has(item.label)) return false;
+        if (!lowPrefix) {
+          seen.add(item.label);
+          return true;
+        }
         const lowLabel = item.label.toLowerCase();
-        return lowLabel.startsWith(lowPrefix) && lowLabel !== lowPrefix;
+        if (lowLabel.startsWith(lowPrefix) && lowLabel !== lowPrefix) {
+          seen.add(item.label);
+          return true;
+        }
+        return false;
       })
       .sort((a, b) => {
+        const rA = a.rank ?? 1;
+        const rB = b.rank ?? 1;
+        if (rA !== rB) return rA - rB;
         const aExact = a.label.startsWith(prefix) ? 0 : 1;
         const bExact = b.label.startsWith(prefix) ? 0 : 1;
         if (aExact !== bExact) return aExact - bExact;
@@ -1117,7 +1378,10 @@ class TempleTerminal {
       const target = this.edFilename;
       this.mode = 'SHELL';
       this.printLine(`@TEEDTHETERRIBLE > EXECUTE ${target}`, 1, 15);
+      this.busy = true;
       await this.lua.cmdExecute(target);
+      this.flushInlineWrite();
+      this.busy = false;
       return;
     }
 
@@ -1428,6 +1692,10 @@ class TempleTerminal {
   }
 
   printLine(text, fg = this.defaultFg, bg = this.defaultBg) {
+    if (this.inlineWriteBuffer) {
+      text = this.inlineWriteBuffer + String(text ?? '');
+      this.inlineWriteBuffer = '';
+    }
     const rawLines = String(text ?? '').split('\n');
     const maxInnerCols = 54;
 
@@ -1453,6 +1721,7 @@ class TempleTerminal {
   clearScreen() {
     this.lines = [];
     this.scrollOffset = 0;
+    this.inlineWriteBuffer = '';
     this.clearGraphicsLayer();
   }
 
@@ -1546,6 +1815,19 @@ class TempleTerminal {
     this.pixels[offset + 3] = 255;
   }
 
+  setFbRGB(x, y, r, g, b, isStroke = true) {
+    const px = Math.trunc(x);
+    const py = Math.trunc(y);
+    if (px < 0 || px >= this.width || py < 0 || py >= this.height) return;
+    const maskIdx = py * this.width + px;
+    if (isStroke) this.fgMask[maskIdx] = 1;
+    const offset = maskIdx * 4;
+    this.pixels[offset] = r;
+    this.pixels[offset + 1] = g;
+    this.pixels[offset + 2] = b;
+    this.pixels[offset + 3] = 255;
+  }
+
   putCell(col, row, ch, fg = 0, bg = 15) {
     if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) return;
     const glyph = window.getGlyph8x8(ch);
@@ -1597,8 +1879,12 @@ class TempleTerminal {
     this.putString(0, 0, ' '.repeat(80), 15, 1, 80);
 
     const fileHovered = this.mouseRow === 0 && this.mouseCol >= 0 && this.mouseCol <= 6;
-    const fileFg = (this.fileMenuOpen || fileHovered) ? 1 : 15;
-    const fileBg = (this.fileMenuOpen || fileHovered) ? 15 : 1;
+    let fileFg = this.flashPhase ? 1 : 15;
+    let fileBg = this.flashPhase ? 15 : 1;
+    if (this.fileMenuOpen || fileHovered) {
+      fileFg = this.flashPhase ? 15 : 1;
+      fileBg = this.flashPhase ? 9 : 11;
+    }
     this.putString(0, 0, ' File ', fileFg, fileBg);
 
     const name = 'FourthTemple';
@@ -1607,37 +1893,16 @@ class TempleTerminal {
     this.putString(80 - timeStr.length - 1, 0, timeStr, 15, 1);
   }
 
-  renderWindowBorder() {
-    this.putCell(0, 1, '╔', 1, 15);
-    for (let c = 1; c < 79; c++) this.putCell(c, 1, '═', 1, 15);
-    this.putCell(79, 1, '╗', 1, 15);
-
-    for (let r = 2; r <= 58; r++) {
-      this.putCell(0, r, '║', 1, 15);
-      this.putCell(79, r, '║', 1, 15);
-    }
-
-    this.putCell(0, 59, '╚', 1, 15);
-    for (let c = 1; c < 79; c++) this.putCell(c, 59, '═', 1, 15);
-    this.putCell(79, 59, '╝', 1, 15);
-
-    const unit = 'casper the terrible .. ';
+  renderPixelMarquee(startCol, widthCells, row, unit, pixelOffset, fgIdx = 15, bgIdx = 1) {
     const unitPxLen = unit.length * 8;
-    const boxWidthCells = 28;
-    const boxStartCol = Math.floor((80 - boxWidthCells) / 2);
-
-    this.putCell(boxStartCol - 1, 1, '[', 1, 15);
-    this.putCell(boxStartCol + boxWidthCells, 1, ']', 1, 15);
-
-    const startPx = boxStartCol * 8;
-    const widthPx = boxWidthCells * 8;
-    const baseY = 1 * 8;
-
-    const fgRGB = window.VGA_PALETTE[15];
-    const bgRGB = window.VGA_PALETTE[1];
+    const startPx = startCol * 8;
+    const widthPx = widthCells * 8;
+    const baseY = row * 8;
+    const fgRGB = window.VGA_PALETTE[fgIdx & 15];
+    const bgRGB = window.VGA_PALETTE[bgIdx & 15];
 
     for (let x = 0; x < widthPx; x++) {
-      const srcPx = (this.spinPixelOffset + x) % unitPxLen;
+      const srcPx = (((pixelOffset + x) % unitPxLen) + unitPxLen) % unitPxLen;
       const charIdx = Math.floor(srcPx / 8);
       const glyphCol = srcPx % 8;
       const glyph = window.getGlyph8x8(unit[charIdx]);
@@ -1658,129 +1923,225 @@ class TempleTerminal {
     }
   }
 
-  renderLuaCircle() {
+  renderBigPixelMarquee(startCol, widthCells, topRow, unit, pixelOffset, fgIdx = 15, bgIdx = 1) {
+    const unitPxLen = unit.length * 16;
+    const startPx = startCol * 8;
+    const widthPx = widthCells * 8;
+    const baseY = topRow * 8;
+    const fgRGB = window.VGA_PALETTE[fgIdx & 15];
+    const bgRGB = window.VGA_PALETTE[bgIdx & 15];
+
+    for (let x = 0; x < widthPx; x++) {
+      const srcPx = (((pixelOffset + x) % unitPxLen) + unitPxLen) % unitPxLen;
+      const charIdx = Math.floor(srcPx / 16);
+      const glyphCol = Math.floor((srcPx % 16) / 2);
+      const glyph = window.getGlyph8x8(unit[charIdx]);
+      const screenX = startPx + x;
+
+      for (let gy = 0; gy < 16; gy++) {
+        const glyphRow = Math.floor(gy / 2);
+        const bit = (glyph[glyphRow] & (0x80 >> glyphCol)) !== 0;
+        const screenY = baseY + gy;
+        const maskIdx = screenY * this.width + screenX;
+        this.fgMask[maskIdx] = bit ? 1 : 0;
+        const rgb = bit ? fgRGB : bgRGB;
+        const offset = maskIdx * 4;
+        this.pixels[offset] = rgb[0];
+        this.pixels[offset + 1] = rgb[1];
+        this.pixels[offset + 2] = rgb[2];
+        this.pixels[offset + 3] = 255;
+      }
+    }
+  }
+
+  renderWindowBorder() {
+    this.putCell(0, 1, '╔', 1, 15);
+    for (let c = 1; c < 79; c++) this.putCell(c, 1, '═', 1, 15);
+    this.putCell(79, 1, '╗', 1, 15);
+
+    for (let r = 2; r <= 58; r++) {
+      this.putCell(0, r, '║', 1, 15);
+      this.putCell(79, r, '║', 1, 15);
+    }
+
+    this.putCell(0, 59, '╚', 1, 15);
+    for (let c = 1; c < 79; c++) this.putCell(c, 59, '═', 1, 15);
+    this.putCell(79, 59, '╝', 1, 15);
+
+    const unit = 'casper the terrible .. ';
+    const boxWidthCells = 28;
+    const boxStartCol = Math.floor((80 - boxWidthCells) / 2);
+
+    this.putCell(boxStartCol - 1, 1, '[', 1, 15);
+    this.putCell(boxStartCol + boxWidthCells, 1, ']', 1, 15);
+
+    this.renderPixelMarquee(boxStartCol, boxWidthCells, 1, unit, this.spinPixelOffset, 15, 1);
+  }
+
+  renderPortrait3D() {
+    const dots = window.PORTRAIT_3D_DOTS;
+    if (!dots || dots.length === 0) return;
+
+    const minX = 458;
+    const maxX = 630;
+    const minY = 238;
+    const maxY = 452;
+
     const cx = 544;
-    const cy = 386;
-    const planetRadius = 44;
-    const orbitRadius = 76;
+    const cy = 348;
     const fov = 220;
-    const camDist = 140;
+    const camDist = 155;
 
-    const rxAngle = this.orbitAngle * 0.75;
-    const ryAngle = this.orbitAngle * 1.1;
-    const rzAngle = this.orbitAngle * 0.45;
+    const sinX = Math.sin(this.portRotX), cosX = Math.cos(this.portRotX);
+    const sinY = Math.sin(this.portRotY), cosY = Math.cos(this.portRotY);
+    const sinZ = Math.sin(this.portRotZ), cosZ = Math.cos(this.portRotZ);
 
-    const sinX = Math.sin(rxAngle), cosX = Math.cos(rxAngle);
-    const sinY = Math.sin(ryAngle), cosY = Math.cos(ryAngle);
-    const sinZ = Math.sin(rzAngle), cosZ = Math.cos(rzAngle);
+    const transform3D = (vx, vy, vz) => {
+      const x1 = vx * cosY + vz * sinY;
+      const z1 = -vx * sinY + vz * cosY;
+      const y2 = vy * cosX - z1 * sinX;
+      const z2 = vy * sinX + z1 * cosX;
+      const x3 = x1 * cosZ - y2 * sinZ;
+      const y3 = x1 * sinZ + y2 * cosZ;
 
-    const rotate3D = (vx, vy, vz) => {
-      const y1 = vy * cosX - vz * sinX;
-      const z1 = vy * sinX + vz * cosX;
-      const x1 = vx;
-      const x2 = x1 * cosY + z1 * sinY;
-      const z2 = -x1 * sinY + z1 * cosY;
-      const y2 = y1;
-      const x3 = x2 * cosZ - y2 * sinZ;
-      const y3 = x2 * sinZ + y2 * cosZ;
-      const z3 = z2;
-
-      const scale = fov / (fov + z3 + camDist);
+      const scale = fov / (fov - z2 + camDist);
       return {
         x: cx + x3 * scale,
         y: cy + y3 * scale,
-        z: z3,
-        nx: x3,
-        ny: y3,
-        nz: z3
+        z: z2,
+        scale
       };
     };
 
-    const drawRing3D = (onlyBehindSphere) => {
-      const steps = 120;
-      for (let s = 0; s < steps; s++) {
-        if (s % 4 === 0) continue;
-        const theta = (s / steps) * Math.PI * 2;
-        const p = rotate3D(
-          Math.cos(theta) * orbitRadius,
-          Math.sin(theta) * orbitRadius,
-          0
-        );
-        if (onlyBehindSphere && p.z < 0) continue;
-        if (!onlyBehindSphere && p.z >= 0) continue;
-
-        const color = p.z < 0 ? 1 : 7;
-        this.setFbPixel(p.x, p.y, color, true);
-        this.setFbPixel(p.x + 1, p.y, color, true);
-        this.setFbPixel(p.x, p.y + 1, color, true);
-        if (p.z < 0) {
-          this.setFbPixel(p.x + 1, p.y + 1, color, true);
-        }
-      }
+    const toBluePalette = (r, g, b, isBack) => {
+      const lum = (r * 0.35 + g * 0.45 + b * 0.2) / 255;
+      const dim = isBack ? 0.72 : 1.0;
+      const br = Math.round((10 + Math.pow(lum, 1.35) * 115) * dim);
+      const bg = Math.round((32 + Math.pow(lum, 1.15) * 165) * dim);
+      const bb = Math.round((135 + Math.pow(lum, 0.75) * 120) * dim);
+      return [br, bg, bb];
     };
 
-    const moonTheta = this.orbitAngle * 1.6;
-    const moonPos = rotate3D(
-      Math.cos(moonTheta) * orbitRadius,
-      Math.sin(moonTheta) * orbitRadius,
-      0
-    );
+    const sceneItems = [];
 
-    const drawOrbitingMoon = () => {
-      const mR = Math.max(5, Math.round(9 * (fov / (fov + moonPos.z + camDist))));
-      for (let dy = -mR; dy <= mR; dy++) {
-        for (let dx = -mR; dx <= mR; dx++) {
-          const d2 = dx * dx + dy * dy;
-          if (d2 <= mR * mR) {
-            const nz = Math.sqrt(Math.max(0, mR * mR - d2)) / mR;
-            const light = (-dx / mR) * 0.4 + (-dy / mR) * 0.4 + nz * 0.8;
-            const col = light > 0.65 ? 11 : (light > 0.25 ? 9 : 1);
-            this.setFbPixel(moonPos.x + dx, moonPos.y + dy, col, false);
-          }
-        }
-      }
-    };
+    for (let i = 0; i < dots.length; i++) {
+      const d = dots[i];
+      const vx = (d[0] - 19.5) * 2.95;
+      const vy = (d[1] - 16.5) * 4.75;
+      const vz = d[2] * 2.6;
 
-    drawRing3D(true);
-    if (moonPos.z >= 0) drawOrbitingMoon();
+      const frontP = transform3D(vx, vy, vz);
+      const [fr, fg, fb] = toBluePalette(d[3], d[4], d[5], false);
+      sceneItems.push({
+        type: 'dot',
+        x: frontP.x,
+        y: frontP.y,
+        z: frontP.z,
+        r: fr,
+        g: fg,
+        b: fb
+      });
 
-    const whiteVecRaw = rotate3D(0.55, -0.45, -0.70);
-    const wLen = Math.hypot(whiteVecRaw.nx, whiteVecRaw.ny, whiteVecRaw.nz) || 1;
-    const wx = whiteVecRaw.nx / wLen;
-    const wy = whiteVecRaw.ny / wLen;
-    const wz = -whiteVecRaw.nz / wLen;
-
-    for (let dy = -planetRadius; dy <= planetRadius; dy++) {
-      for (let dx = -planetRadius; dx <= planetRadius; dx++) {
-        const d2 = dx * dx + dy * dy;
-        if (d2 <= planetRadius * planetRadius) {
-          const nx = dx / planetRadius;
-          const ny = dy / planetRadius;
-          const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
-
-          const dotWhite = nx * wx + ny * wy + nz * wz;
-
-          if (dotWhite > 0.86) {
-            const innerColor = dotWhite > 0.90 ? 15 : 7;
-            this.setFbPixel(cx + dx, cy + dy, innerColor, false);
-          } else if (d2 >= (planetRadius - 1.6) * (planetRadius - 1.6)) {
-            this.setFbPixel(cx + dx, cy + dy, 8, true);
-          } else {
-            const light = (-nx * 0.35) + (-ny * 0.35) + (nz * 0.85);
-            let sphereColor = 1;
-            if (light > 0.88 && ((dx + dy) & 1) === 0) {
-              sphereColor = 9;
-            } else if (light < 0.38 && ((dx ^ dy) & 1) === 0) {
-              sphereColor = 8;
-            }
-            this.setFbPixel(cx + dx, cy + dy, sphereColor, false);
-          }
-        }
+      if (d[2] > 1.5 && ((i & 1) === 0)) {
+        const backP = transform3D(vx, vy, -vz * 0.85);
+        const [br, bg, bb] = toBluePalette(d[3], d[4], d[5], true);
+        sceneItems.push({
+          type: 'dot',
+          x: backP.x,
+          y: backP.y,
+          z: backP.z,
+          r: br,
+          g: bg,
+          b: bb
+        });
       }
     }
 
-    drawRing3D(false);
-    if (moonPos.z < 0) drawOrbitingMoon();
+    const orbitRadius = 74;
+    const ringSteps = 120;
+    for (let s = 0; s < ringSteps; s++) {
+      if (s % 4 === 0) continue;
+      const theta = (s / ringSteps) * Math.PI * 2;
+      const rx = Math.cos(theta) * orbitRadius;
+      const ry = Math.sin(theta) * orbitRadius * 0.35;
+      const rz = Math.sin(theta) * orbitRadius;
+      const rp = transform3D(rx, ry, rz);
+      sceneItems.push({
+        type: 'ring',
+        x: rp.x,
+        y: rp.y,
+        z: rp.z
+      });
+    }
+
+    const moonTheta = this.orbitAngle * 1.5;
+    const moonP = transform3D(
+      Math.cos(moonTheta) * orbitRadius,
+      Math.sin(moonTheta) * orbitRadius * 0.35,
+      Math.sin(moonTheta) * orbitRadius
+    );
+    sceneItems.push({
+      type: 'moon',
+      x: moonP.x,
+      y: moonP.y,
+      z: moonP.z,
+      scale: moonP.scale
+    });
+
+    sceneItems.sort((a, b) => a.z - b.z);
+
+    for (let i = 0; i < sceneItems.length; i++) {
+      const item = sceneItems[i];
+      const px = Math.round(item.x);
+      const py = Math.round(item.y);
+
+      if (item.type === 'ring') {
+        if (px <= minX || px >= maxX || py <= minY || py >= maxY) continue;
+        const col = item.z > 0 ? 1 : 7;
+        this.setFbPixel(px, py, col, true);
+        this.setFbPixel(px + 1, py, col, true);
+        this.setFbPixel(px, py + 1, col, true);
+        if (item.z > 0) {
+          this.setFbPixel(px + 1, py + 1, col, true);
+        }
+        continue;
+      }
+
+      if (item.type === 'moon') {
+        const mR = Math.max(5, Math.round(8 * item.scale));
+        for (let dy = -mR; dy <= mR; dy++) {
+          for (let dx = -mR; dx <= mR; dx++) {
+            const d2 = dx * dx + dy * dy;
+            if (d2 <= mR * mR) {
+              const mx = px + dx;
+              const my = py + dy;
+              if (mx <= minX || mx >= maxX || my <= minY || my >= maxY) continue;
+              const nz = Math.sqrt(Math.max(0, mR * mR - d2)) / mR;
+              const light = (-dx / mR) * 0.4 + (-dy / mR) * 0.4 + nz * 0.85;
+              const col = light > 0.65 ? 11 : (light > 0.28 ? 9 : 1);
+              this.setFbPixel(mx, my, col, true);
+            }
+          }
+        }
+        continue;
+      }
+
+      if (px <= minX || px >= maxX || py <= minY || py >= maxY) {
+        continue;
+      }
+
+      const depthBoost = Math.max(0.65, Math.min(1.25, 0.94 + item.z / 70));
+      const rr = Math.min(245, Math.round(item.r * depthBoost));
+      const gg = Math.min(245, Math.round(item.g * depthBoost));
+      const bb = Math.min(255, Math.round(item.b * depthBoost));
+
+      this.setFbRGB(px, py, rr, gg, bb, true);
+      this.setFbRGB(px + 1, py, rr, gg, bb, true);
+      this.setFbRGB(px, py + 1, rr, gg, bb, true);
+      if (item.z > 0) {
+        this.setFbRGB(px + 1, py + 1, rr, gg, bb, true);
+      }
+    }
   }
 
   renderRightCommandPanel() {
@@ -1788,24 +2149,12 @@ class TempleTerminal {
       this.putCell(56, r, '│', 1, 15);
     }
 
-    const cmd1Fg = this.flashPhase ? 15 : 1;
-    const cmd1Bg = this.flashPhase ? 1 : 15;
-
-    const cmd2Fg = this.flashPhase ? 1 : 9;
-    const cmd2Bg = this.flashPhase ? 9 : 15;
-
-    const cmd3Fg = this.flashPhase ? 15 : 8;
-    const cmd3Bg = this.flashPhase ? 8 : 15;
-
-    const cmd4Fg = this.flashPhase ? 1 : 15;
-    const cmd4Bg = this.flashPhase ? 7 : 8;
-
     this.putString(58, 2, 'COMMANDS', 1, 15);
 
-    this.putString(58, 4, ' CREATE <name>      ', cmd1Fg, cmd1Bg, 20);
-    this.putString(58, 6, ' EDIT <name>        ', cmd2Fg, cmd2Bg, 20);
-    this.putString(58, 8, ' EXECUTE <name>     ', cmd3Fg, cmd3Bg, 20);
-    this.putString(58, 10, ' DELETE <name>      ', cmd4Fg, cmd4Bg, 20);
+    this.putString(58, 4, ' CREATE <name>      ', 15, 1, 20);
+    this.putString(58, 6, ' EDIT <name>        ', 15, 9, 20);
+    this.putString(58, 8, ' EXECUTE <name>     ', 15, 8, 20);
+    this.putString(58, 10, ' DELETE <name>      ', 1, 7, 20);
 
     this.putString(58, 12, '────────────────────', 7, 15, 20);
     this.putString(58, 13, 'FILES', 1, 15);
@@ -1813,13 +2162,42 @@ class TempleTerminal {
     const files = Object.keys(this.lua.files).sort();
     for (let i = 0; i < Math.min(files.length, 12); i++) {
       const f = files[i];
-      const inv = this.flashPhase ? (i % 2 === 0) : (i % 2 !== 0);
-      const fFg = inv ? 15 : 1;
-      const fBg = inv ? 8 : 7;
+      const isEven = i % 2 === 0;
+      const fFg = isEven ? 1 : 15;
+      const fBg = isEven ? 7 : 8;
       this.putString(58, 14 + i, ` ${f.padEnd(18, ' ')} `, fFg, fBg, 20);
     }
 
-    this.renderLuaCircle();
+    this.renderPortrait3D();
+
+    const roll1Fg = this.flashPhase ? 15 : 1;
+    const roll1Bg = this.flashPhase ? 1 : 15;
+    const roll2Fg = this.flashPhase ? 1 : 15;
+    const roll2Bg = this.flashPhase ? 15 : 1;
+
+    this.putCell(57, 57, '[', roll1Fg, roll1Bg);
+    this.putCell(78, 57, ']', roll1Fg, roll1Bg);
+    this.renderPixelMarquee(
+      58,
+      20,
+      57,
+      'im the best programmer on earth .. ',
+      -this.spinPixelOffset,
+      roll1Fg,
+      roll1Bg
+    );
+
+    this.putCell(57, 58, '[', roll2Fg, roll2Bg);
+    this.putCell(78, 58, ']', roll2Fg, roll2Bg);
+    this.renderPixelMarquee(
+      58,
+      20,
+      58,
+      'thats why god chose me .. ',
+      this.spinPixelOffset,
+      roll2Fg,
+      roll2Bg
+    );
   }
 
   renderShellFrame() {
@@ -1829,13 +2207,14 @@ class TempleTerminal {
     this.renderRightCommandPanel();
 
     const paneWidth = 54;
-    const fullPrompt = this.promptText + this.inputBuffer;
+    const activePrefix = this.waitingForStdin ? this.stdinPrefix : this.promptText;
+    const fullPrompt = activePrefix + this.inputBuffer;
     const promptChunks = [];
     for (let i = 0; i < Math.max(1, fullPrompt.length); i += paneWidth) {
       promptChunks.push(fullPrompt.slice(i, i + paneWidth));
     }
 
-    const availRows = 57;
+    const availRows = 55;
     const maxHistoryRows = Math.max(1, availRows - promptChunks.length);
     const endIdx = Math.max(0, this.lines.length - this.scrollOffset);
     const startIdx = Math.max(0, endIdx - maxHistoryRows);
@@ -1847,19 +2226,19 @@ class TempleTerminal {
       screenRow++;
     }
 
-    if (this.scrollOffset === 0) {
+    if (this.scrollOffset === 0 && (!this.busy || this.waitingForStdin)) {
       const promptStartRow = screenRow;
       const hasSel = this.hasShellSelection();
       const selMin = hasSel ? Math.min(this.shellSelStart, this.shellSelEnd) : -1;
       const selMax = hasSel ? Math.max(this.shellSelStart, this.shellSelEnd) : -1;
 
       for (let cIdx = 0; cIdx < promptChunks.length; cIdx++) {
-        if (promptStartRow + cIdx > 58) break;
+        if (promptStartRow + cIdx > 56) break;
         const textChunk = promptChunks[cIdx];
         for (let i = 0; i < textChunk.length; i++) {
           const globalPos = cIdx * paneWidth + i;
-          const isPromptPart = globalPos < this.promptText.length;
-          const inputIdx = globalPos - this.promptText.length;
+          const isPromptPart = globalPos < activePrefix.length;
+          const inputIdx = globalPos - activePrefix.length;
           const isSelected = !isPromptPart && hasSel && inputIdx >= selMin && inputIdx < selMax;
           const cellFg = isSelected ? 15 : (isPromptPart ? 1 : 0);
           const cellBg = isSelected ? 9 : this.defaultBg;
@@ -1867,16 +2246,32 @@ class TempleTerminal {
         }
       }
 
-      if (this.cursorBlink && !this.busy) {
-        const totalCursorIdx = this.promptText.length + this.cursorPos;
+      if (this.cursorBlink) {
+        const totalCursorIdx = activePrefix.length + this.cursorPos;
         const cRow = promptStartRow + Math.floor(totalCursorIdx / paneWidth);
         const cCol = 1 + (totalCursorIdx % paneWidth);
-        if (cRow <= 58 && cCol <= 55) {
+        if (cRow <= 56 && cCol <= 55) {
           const chUnder = this.inputBuffer[this.cursorPos] || ' ';
           this.putCell(cCol, cRow, chUnder, 15, 1);
         }
       }
     }
+
+    const bigFg = 15;
+    const bigBg = 1;
+    this.putCell(1, 57, '╔', bigFg, bigBg);
+    this.putCell(1, 58, '╚', bigFg, bigBg);
+    this.putCell(55, 57, '╗', bigFg, bigBg);
+    this.putCell(55, 58, '╝', bigFg, bigBg);
+    this.renderBigPixelMarquee(
+      2,
+      53,
+      57,
+      'PRAISE_TEED_PRAISE_SKIDS_',
+      this.spinPixelOffset * 2,
+      bigFg,
+      bigBg
+    );
 
     for (let i = 0; i < this.gfxBuffer.length; i++) {
       const c = this.gfxBuffer[i];
@@ -2184,8 +2579,24 @@ class TempleTerminal {
 
     const tick = () => {
       this.frameCount++;
-      this.spinPixelOffset = (this.spinPixelOffset + 1) % (23 * 8);
+      this.spinPixelOffset = (this.spinPixelOffset + 1) & 0x3FFFFFFF;
       this.orbitAngle += 0.035;
+
+      if (this.frameCount % 95 === 0) {
+        this.portTargetVelY = (Math.random() > 0.25 ? 1 : -1) * (0.014 + Math.random() * 0.024);
+        this.portTargetVelX = (Math.random() - 0.5) * 0.022;
+        this.portTargetVelZ = (Math.random() - 0.5) * 0.014;
+      }
+
+      this.portVelX += (this.portTargetVelX - this.portVelX) * 0.025;
+      this.portVelY += (this.portTargetVelY - this.portVelY) * 0.025;
+      this.portVelZ += (this.portTargetVelZ - this.portVelZ) * 0.025;
+
+      this.portRotY += this.portVelY;
+      this.portRotX = Math.max(-0.55, Math.min(0.55, this.portRotX + this.portVelX));
+      if (Math.abs(this.portRotX) >= 0.54) this.portTargetVelX = -this.portTargetVelX;
+      this.portRotZ = Math.max(-0.35, Math.min(0.35, this.portRotZ + this.portVelZ));
+      if (Math.abs(this.portRotZ) >= 0.34) this.portTargetVelZ = -this.portTargetVelZ;
 
       if (this.mode === 'EDITOR') {
         this.renderEditorFrame();
