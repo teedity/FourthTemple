@@ -1,12 +1,7 @@
-/**
- * FourthTemple — Lua Compiler & Socket Runtime
- * Supports Lua 5.4 syntax, LuaSocket (TCP/UDP/HTTP/WS/DNS), and browser persistence.
- */
-
 class TempleLuaCompiler {
   constructor(terminal) {
     this.term = terminal;
-    this.storageKey = 'fourthtemple_lua_files_v2';
+    this.storageKey = 'fourthtemple_lua_files_v4';
     this.files = this.loadFiles();
     this.virtualServers = new Map();
     this.globals = {};
@@ -15,7 +10,7 @@ class TempleLuaCompiler {
   }
 
   normalizeFilename(name) {
-    const clean = String(name || 'main').trim().replace(/^["']|["']$/g, '');
+    const clean = String(name || 'main').trim().replace(/^["']|['"]$/g, '');
     if (!clean) return 'main.lua';
     return clean.toLowerCase().endsWith('.lua') ? clean : `${clean}.lua`;
   }
@@ -29,24 +24,19 @@ class TempleLuaCompiler {
           return parsed;
         }
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
     return this.defaultFiles();
   }
 
   saveFiles() {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(this.files));
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   }
 
   defaultFiles() {
     return {
-      'mrrobot.lua': `-- mrrobot.lua
--- Lua Socket Client/Server Demo
+      'mrrobot.lua': `--!mrrobot.lua
 local socket = require("socket")
 
 local srv = socket.bind("127.0.0.1", 9090)
@@ -69,7 +59,6 @@ srv:close()
   }
 
   initDefaultServers() {
-    // Port 7: Echo Server
     this.virtualServers.set(7, {
       host: '127.0.0.1',
       port: 7,
@@ -77,7 +66,6 @@ srv:close()
       handler: (data) => `ECHO: ${String(data).replace(/\r?\n$/, '')}`
     });
 
-    // Port 13: Daytime Server
     this.virtualServers.set(13, {
       host: '127.0.0.1',
       port: 13,
@@ -85,7 +73,6 @@ srv:close()
       handler: () => new Date().toUTCString()
     });
 
-    // Port 80: Local HTTP Server
     this.virtualServers.set(80, {
       host: '127.0.0.1',
       port: 80,
@@ -97,13 +84,16 @@ srv:close()
     });
   }
 
-  /* ==========================================================================
-     Lua-to-JS Compiler
-     ========================================================================== */
+  makeLuaError(line, message) {
+    const err = new Error(message);
+    err.luaLine = line || 1;
+    return err;
+  }
 
   compileLuaToJS(luaSource, chunkName = 'stdin') {
     const startTime = performance.now();
     const tokens = this.tokenizeLua(luaSource, chunkName);
+    this.validateLuaSyntax(tokens);
     const jsBody = this.translateTokensToJS(tokens);
     const compileTimeUs = Math.max(1, Math.round((performance.now() - startTime) * 1000));
 
@@ -112,7 +102,8 @@ srv:close()
     try {
       fn = new AsyncFunction('__env', `with (__env) {\n${jsBody}\n}`);
     } catch (err) {
-      throw new Error(`${chunkName}: SyntaxError: ${err.message}`);
+      const detectedLine = this.detectSyntaxErrorLine(luaSource, err.message);
+      throw this.makeLuaError(detectedLine, `Syntax error near line ${detectedLine}: ${err.message}`);
     }
 
     return {
@@ -122,6 +113,101 @@ srv:close()
       compileTimeUs,
       sourceSize: luaSource.length
     };
+  }
+
+  detectSyntaxErrorLine(luaSource, fallbackMsg) {
+    const rawLines = luaSource.replace(/\r\n/g, '\n').split('\n');
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    for (let i = 0; i < rawLines.length; i++) {
+      const single = rawLines[i].trim();
+      if (!single) continue;
+      if (/^(if|elseif|else|for|while|repeat|until|function|local\s+function|end)\b/.test(single)) {
+        continue;
+      }
+      try {
+        const toks = this.tokenizeLua(single, 'line');
+        const js = this.translateTokensToJS(toks);
+        new AsyncFunction('__env', `with (__env) {\n${js}\n}`);
+      } catch (e) {
+        return i + 1;
+      }
+    }
+    return 1;
+  }
+
+  validateLuaSyntax(tokens) {
+    const blockStack = [];
+    const bracketStack = [];
+    const lines = this.splitTokenLines(tokens);
+
+    for (const lineToks of lines) {
+      if (lineToks.length === 0) continue;
+      const lineNum = lineToks[0].line || 1;
+      const first = lineToks[0];
+      const last = lineToks[lineToks.length - 1];
+
+      if (first.type === 'kw' && (first.value === 'if' || first.value === 'elseif')) {
+        const hasThen = lineToks.some(t => t.type === 'kw' && t.value === 'then');
+        if (!hasThen) {
+          throw this.makeLuaError(lineNum, `'then' expected near '${last.value}'`);
+        }
+      }
+
+      if (first.type === 'kw' && (first.value === 'while' || first.value === 'for')) {
+        const hasDo = lineToks.some(t => t.type === 'kw' && t.value === 'do');
+        if (!hasDo) {
+          throw this.makeLuaError(lineNum, `'do' expected near '${last.value}'`);
+        }
+      }
+
+      if (['+', '-', '*', '/', '..', '==', '~=', '<=', '>=', '<', '>', '='].includes(last.value)) {
+        throw this.makeLuaError(lineNum, `unexpected end of line after '${last.value}'`);
+      }
+    }
+
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t.type === 'nl') continue;
+
+      if (t.value === '(' || t.value === '[' || t.value === '{') {
+        bracketStack.push({ ch: t.value, line: t.line });
+      } else if (t.value === ')' || t.value === ']' || t.value === '}') {
+        const expected = t.value === ')' ? '(' : (t.value === ']' ? '[' : '{');
+        const top = bracketStack.pop();
+        if (!top || top.ch !== expected) {
+          throw this.makeLuaError(t.line, `unmatched '${t.value}'`);
+        }
+      }
+
+      if (t.type === 'kw') {
+        if (['function', 'if', 'for', 'while'].includes(t.value)) {
+          blockStack.push({ kw: t.value, line: t.line });
+        } else if (t.value === 'repeat') {
+          blockStack.push({ kw: 'repeat', line: t.line });
+        } else if (t.value === 'end') {
+          const top = blockStack.pop();
+          if (!top || top.kw === 'repeat') {
+            throw this.makeLuaError(t.line, `unexpected 'end'`);
+          }
+        } else if (t.value === 'until') {
+          const top = blockStack.pop();
+          if (!top || top.kw !== 'repeat') {
+            throw this.makeLuaError(t.line, `'until' without matching 'repeat'`);
+          }
+        }
+      }
+    }
+
+    if (bracketStack.length > 0) {
+      const unclosed = bracketStack[bracketStack.length - 1];
+      throw this.makeLuaError(unclosed.line, `unclosed '${unclosed.ch}'`);
+    }
+
+    if (blockStack.length > 0) {
+      const unclosed = blockStack[blockStack.length - 1];
+      const expected = unclosed.kw === 'repeat' ? 'until' : 'end';
+      throw this.makeLuaError(unclosed.line, `'${expected}' expected (to close '${unclosed.kw}' at line ${unclosed.line})`);
+    }
   }
 
   tokenizeLua(src, chunkName) {
@@ -144,7 +230,6 @@ srv:close()
         continue;
       }
 
-      // Comments
       if (ch === '-' && next === '-') {
         if (src.slice(i + 2, i + 4) === '[[') {
           const endIdx = src.indexOf(']]', i + 4);
@@ -158,37 +243,41 @@ srv:close()
         continue;
       }
 
-      // Raw strings [[ ... ]]
       if (ch === '[' && next === '[') {
+        const startLine = line;
         const endIdx = src.indexOf(']]', i + 2);
-        if (endIdx === -1) throw new Error(`${chunkName}:${line}: unfinished long string`);
+        if (endIdx === -1) throw this.makeLuaError(startLine, `unfinished long string`);
         const raw = src.slice(i + 2, endIdx);
         line += (raw.match(/\n/g) || []).length;
-        tokens.push({ type: 'string', value: JSON.stringify(raw), line });
+        tokens.push({ type: 'string', value: JSON.stringify(raw), line: startLine });
         i = endIdx + 2;
         continue;
       }
 
-      // Strings
       if (ch === '"' || ch === "'") {
         const quote = ch;
+        const startLine = line;
         let str = '';
         i++;
         while (i < src.length && src[i] !== quote) {
+          if (src[i] === '\n') {
+            throw this.makeLuaError(startLine, `unfinished string near '${str.slice(0, 16)}'`);
+          }
           if (src[i] === '\\' && i + 1 < src.length) {
             str += src[i] + src[i + 1];
             i += 2;
           } else {
-            if (src[i] === '\n') line++;
             str += src[i++];
           }
         }
+        if (i >= src.length) {
+          throw this.makeLuaError(startLine, `unfinished string near '${str.slice(0, 16)}'`);
+        }
         i++;
-        tokens.push({ type: 'string', value: `"${str.replace(/"/g, '\\"')}"`, line });
+        tokens.push({ type: 'string', value: `"${str.replace(/"/g, '\\"')}"`, line: startLine });
         continue;
       }
 
-      // Numbers
       if (/[0-9]/.test(ch) || (ch === '.' && /[0-9]/.test(next || ''))) {
         let num = '';
         if (ch === '0' && (next === 'x' || next === 'X')) {
@@ -241,7 +330,7 @@ srv:close()
         continue;
       }
 
-      i++;
+      throw this.makeLuaError(line, `unexpected symbol '${ch}'`);
     }
 
     return tokens;
@@ -271,47 +360,45 @@ srv:close()
       if (lineToks.length === 0) continue;
 
       const first = lineToks[0];
+      const lineNum = first.line || 1;
+      const trackLine = `__line = ${lineNum}; `;
 
-      // 1. `local function name(args)`
       if (first.type === 'kw' && first.value === 'local' && lineToks[1] && lineToks[1].value === 'function') {
         const fnName = lineToks[2].value;
         const rest = this.tokensToExpr(lineToks.slice(3));
-        translatedLines.push(`let ${fnName} = async function ${rest} {`);
+        translatedLines.push(`${trackLine}let ${fnName} = async function ${rest} {`);
         blockStack.push('function');
         continue;
       }
 
-      // 2. `function name(args)`
       if (first.type === 'kw' && first.value === 'function') {
         const pIdx = lineToks.findIndex(t => t.value === '(');
         if (pIdx !== -1) {
           const fnName = lineToks.slice(1, pIdx).map(t => t.value).join('');
           const params = this.tokensToExpr(lineToks.slice(pIdx));
-          translatedLines.push(`${fnName} = async function ${params} {`);
+          translatedLines.push(`${trackLine}${fnName} = async function ${params} {`);
           blockStack.push('function');
           continue;
         }
       }
 
-      // 3. `local a, b = ...`
       if (first.type === 'kw' && first.value === 'local') {
         const eqIdx = lineToks.findIndex(t => t.value === '=');
         if (eqIdx === -1) {
           const vars = lineToks.slice(1).map(t => t.value).join(' ');
-          translatedLines.push(`let ${vars};`);
+          translatedLines.push(`${trackLine}let ${vars};`);
         } else {
           const lhs = lineToks.slice(1, eqIdx).filter(t => t.value !== ',').map(t => t.value);
           const rhs = this.tokensToExpr(lineToks.slice(eqIdx + 1));
           if (lhs.length === 1) {
-            translatedLines.push(`let ${lhs[0]} = ${rhs};`);
+            translatedLines.push(`${trackLine}let ${lhs[0]} = ${rhs};`);
           } else {
-            translatedLines.push(`let [${lhs.join(', ')}] = __multi(${rhs});`);
+            translatedLines.push(`${trackLine}let [${lhs.join(', ')}] = __multi(${rhs});`);
           }
         }
         continue;
       }
 
-      // 4. `if <cond> then`
       if (first.type === 'kw' && first.value === 'if') {
         const thenIdx = lineToks.findIndex(t => t.type === 'kw' && t.value === 'then');
         const condToks = thenIdx !== -1 ? lineToks.slice(1, thenIdx) : lineToks.slice(1);
@@ -323,55 +410,50 @@ srv:close()
           const innerToks = hasEndAtTail ? afterThen.slice(0, -1) : afterThen;
           const innerJs = this.translateTokensToJS(innerToks);
           if (hasEndAtTail) {
-            translatedLines.push(`if (__truthy(${condExpr})) { ${innerJs} }`);
+            translatedLines.push(`${trackLine}if (__truthy(${condExpr})) { ${innerJs} }`);
           } else {
-            translatedLines.push(`if (__truthy(${condExpr})) { ${innerJs}`);
+            translatedLines.push(`${trackLine}if (__truthy(${condExpr})) { ${innerJs}`);
             blockStack.push('if');
           }
         } else {
-          translatedLines.push(`if (__truthy(${condExpr})) {`);
+          translatedLines.push(`${trackLine}if (__truthy(${condExpr})) {`);
           blockStack.push('if');
         }
         continue;
       }
 
-      // 5. `elseif <cond> then`
       if (first.type === 'kw' && first.value === 'elseif') {
         const thenIdx = lineToks.findIndex(t => t.type === 'kw' && t.value === 'then');
         const condToks = thenIdx !== -1 ? lineToks.slice(1, thenIdx) : lineToks.slice(1);
-        translatedLines.push(`} else if (__truthy(${this.tokensToExpr(condToks)})) {`);
+        translatedLines.push(`} else if ((__line = ${lineNum}, __truthy(${this.tokensToExpr(condToks)}))) {`);
         continue;
       }
 
-      // 6. `else`
       if (first.type === 'kw' && first.value === 'else') {
         translatedLines.push(`} else {`);
         continue;
       }
 
-      // 7. `while <cond> do`
       if (first.type === 'kw' && first.value === 'while') {
         const doIdx = lineToks.findIndex(t => t.type === 'kw' && t.value === 'do');
         const condToks = doIdx !== -1 ? lineToks.slice(1, doIdx) : lineToks.slice(1);
-        translatedLines.push(`while (__truthy(${this.tokensToExpr(condToks)})) {`);
+        translatedLines.push(`${trackLine}while (__truthy(${this.tokensToExpr(condToks)})) {`);
         blockStack.push('while');
         continue;
       }
 
-      // 8. `repeat` ... `until <cond>`
       if (first.type === 'kw' && first.value === 'repeat') {
-        translatedLines.push(`do {`);
+        translatedLines.push(`${trackLine}do {`);
         blockStack.push('repeat');
         continue;
       }
       if (first.type === 'kw' && first.value === 'until') {
         const condExpr = this.tokensToExpr(lineToks.slice(1));
         blockStack.pop();
-        translatedLines.push(`} while (!__truthy(${condExpr}));`);
+        translatedLines.push(`${trackLine}} while (!__truthy(${condExpr}));`);
         continue;
       }
 
-      // 9. `for ... do`
       if (first.type === 'kw' && first.value === 'for') {
         const doIdx = lineToks.findIndex(t => t.type === 'kw' && t.value === 'do');
         const headerToks = doIdx !== -1 ? lineToks.slice(1, doIdx) : lineToks.slice(1);
@@ -393,7 +475,7 @@ srv:close()
         if (inIdx !== -1) {
           const vars = headerToks.slice(0, inIdx).filter(t => t.value !== ',').map(t => t.value);
           const iterExpr = this.tokensToExpr(headerToks.slice(inIdx + 1));
-          const headerJs = `for (const [${vars.join(', ')}] of ${iterExpr}) {`;
+          const headerJs = `${trackLine}for (const [${vars.join(', ')}] of ${iterExpr}) {`;
           if (closesImmediately) {
             translatedLines.push(`${headerJs} ${inlineBody} }`);
           } else {
@@ -406,7 +488,7 @@ srv:close()
           const startExpr = this.tokensToExpr(rangeParts[0] || [{ type: 'number', value: '1' }]);
           const stopExpr = this.tokensToExpr(rangeParts[1] || [{ type: 'number', value: '1' }]);
           const stepExpr = rangeParts[2] ? this.tokensToExpr(rangeParts[2]) : '1';
-          const headerJs = `for (let ${varName} = (${startExpr}), __stop_${varName} = (${stopExpr}), __step_${varName} = (${stepExpr}); (__step_${varName} >= 0 ? ${varName} <= __stop_${varName} : ${varName} >= __stop_${varName}); ${varName} += __step_${varName}) {`;
+          const headerJs = `${trackLine}for (let ${varName} = (${startExpr}), __stop_${varName} = (${stopExpr}), __step_${varName} = (${stepExpr}); (__step_${varName} >= 0 ? ${varName} <= __stop_${varName} : ${varName} >= __stop_${varName}); ${varName} += __step_${varName}) {`;
           if (closesImmediately) {
             translatedLines.push(`${headerJs} ${inlineBody} }`);
           } else {
@@ -417,36 +499,32 @@ srv:close()
         continue;
       }
 
-      // 10. `end`
       if (first.type === 'kw' && first.value === 'end') {
         blockStack.pop();
         translatedLines.push(`}`);
         continue;
       }
 
-      // 11. `return ...`
       if (first.type === 'kw' && first.value === 'return') {
         const parts = this.splitByTopLevelComma(lineToks.slice(1));
         if (parts.length <= 1) {
-          translatedLines.push(`return ${this.tokensToExpr(lineToks.slice(1))};`);
+          translatedLines.push(`${trackLine}return ${this.tokensToExpr(lineToks.slice(1))};`);
         } else {
-          translatedLines.push(`return [${parts.map(p => this.tokensToExpr(p)).join(', ')}];`);
+          translatedLines.push(`${trackLine}return [${parts.map(p => this.tokensToExpr(p)).join(', ')}];`);
         }
         continue;
       }
 
-      // 12. `break`
       if (first.type === 'kw' && first.value === 'break') {
-        translatedLines.push(`break;`);
+        translatedLines.push(`${trackLine}break;`);
         continue;
       }
 
-      // 13. General expression
       const exprJs = this.tokensToExpr(lineToks);
       if (lines.length === 1 && !isStatementStart && !hasTopAssign) {
-        translatedLines.push(`return (${exprJs});`);
+        translatedLines.push(`${trackLine}return (${exprJs});`);
       } else {
-        translatedLines.push(`${exprJs};`);
+        translatedLines.push(`${trackLine}${exprJs};`);
       }
     }
 
@@ -507,7 +585,6 @@ srv:close()
       const t = tokens[i];
       const next = tokens[i + 1];
 
-      // Anonymous inline `function(...) ... end`
       if (t.type === 'kw' && t.value === 'function') {
         let depth = 1;
         let j = i + 1;
@@ -525,7 +602,6 @@ srv:close()
         continue;
       }
 
-      // Table literal `{ ... }`
       if (t.value === '{') {
         let depth = 1;
         let j = i + 1;
@@ -540,7 +616,6 @@ srv:close()
         continue;
       }
 
-      // Identifier, property chain (`a.b.c`), or function/method call (`a.b(x)`, `a:b(x)`, `fn(x)`)
       if (t.type === 'id') {
         let callee = t.value;
         let k = i + 1;
@@ -574,7 +649,6 @@ srv:close()
         }
       }
 
-      // Length operator `#expr`
       if (t.value === '#' && next) {
         out += `__len(${next.value})`;
         i++;
@@ -644,10 +718,6 @@ srv:close()
     return `__table({ ${props.join(', ')} })`;
   }
 
-  /* ==========================================================================
-     Lua Standard Library + Socket Stack
-     ========================================================================== */
-
   initLuaEnvironment() {
     const self = this;
 
@@ -668,6 +738,7 @@ srv:close()
 
     this.globals = {
       _VERSION: 'Lua 5.4',
+      __line: 1,
 
       __truthy: (v) => v !== false && v !== null && v !== undefined,
       __len: (v) => {
@@ -713,12 +784,12 @@ srv:close()
       },
       assert: (cond, msg = 'assertion failed!') => {
         if (cond === false || cond === null || cond === undefined) {
-          throw new Error(msg);
+          throw self.makeLuaError(self.globals.__line, msg);
         }
         return cond;
       },
       error: (msg) => {
-        throw new Error(String(msg));
+        throw self.makeLuaError(self.globals.__line, String(msg));
       },
       require: (modName) => {
         if (modName === 'socket' || modName === 'socket.core') return socketLib;
@@ -732,7 +803,7 @@ srv:close()
           const compiled = self.compileLuaToJS(self.files[fileKey], fileKey);
           return compiled.fn(self.globals);
         }
-        throw new Error(`module '${modName}' not found`);
+        throw self.makeLuaError(self.globals.__line, `module '${modName}' not found`);
       },
 
       math: {
@@ -1035,10 +1106,6 @@ srv:close()
     };
   }
 
-  /* ==========================================================================
-     CREATE / EDIT / EXECUTE / DELETE Command Processor
-     ========================================================================== */
-
   cmdCreate(rawName) {
     if (!rawName) {
       this.term.printLine('Usage: CREATE <filename>', 8, 15);
@@ -1046,7 +1113,7 @@ srv:close()
     }
     const file = this.normalizeFilename(rawName);
     if (this.files[file] === undefined) {
-      this.files[file] = `-- ${file}\nlocal socket = require("socket")\n\nprint("Running ${file}...")\n`;
+      this.files[file] = `--!${file}\n`;
       this.saveFiles();
       this.term.printLine(`Created ${file} in browser storage.`, 1, 15);
     } else {
@@ -1058,7 +1125,7 @@ srv:close()
     const defaultName = Object.keys(this.files)[0] || 'mrrobot.lua';
     const file = rawName ? this.normalizeFilename(rawName) : defaultName;
     if (this.files[file] === undefined) {
-      this.files[file] = `-- ${file}\nlocal socket = require("socket")\n\n`;
+      this.files[file] = `--!${file}\n`;
       this.saveFiles();
     }
     this.term.openEditor(file);
@@ -1096,7 +1163,6 @@ srv:close()
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    // Parse CREATE / EDIT / EXECUTE / DELETE commands
     const match = trimmed.match(/^([a-zA-Z]+)(?:\s+(.*))?$/);
     if (match) {
       const verb = match[1].toUpperCase();
@@ -1120,7 +1186,6 @@ srv:close()
       }
     }
 
-    // Also allow direct Lua code execution
     await this.executeSource(trimmed, 'stdin');
   }
 
@@ -1128,6 +1193,7 @@ srv:close()
     const trimmed = source.trim();
     if (!trimmed) return;
 
+    this.globals.__line = 1;
     try {
       const compiled = this.compileLuaToJS(trimmed, chunkName);
       const result = await compiled.fn(this.globals);
@@ -1139,7 +1205,9 @@ srv:close()
         }
       }
     } catch (e) {
-      this.term.printLine(`Lua Error: ${e.message}`, 8, 15);
+      const lineNum = e.luaLine || this.globals.__line || 1;
+      const cleanMessage = String(e.message || e).replace(/^Syntax error near line \d+:\s*/i, '');
+      this.term.printLine(`Lua Error [${chunkName} : Line ${lineNum}]: ${cleanMessage}`, 8, 15);
     }
   }
 }
