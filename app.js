@@ -1968,7 +1968,7 @@ class TempleTerminal {
     for (let c = 1; c < 79; c++) this.putCell(c, 59, '═', 1, 15);
     this.putCell(79, 59, '╝', 1, 15);
 
-    const unit = 'casper the terrible .. ';
+    const unit = 'casperito titos ..';
     const boxWidthCells = 28;
     const boxStartCol = Math.floor((80 - boxWidthCells) / 2);
 
@@ -2267,7 +2267,7 @@ class TempleTerminal {
       2,
       53,
       57,
-      'PRAISE_TEED_PRAISE_SKIDS_',
+      'teed the terrible ',
       this.spinPixelOffset * 2,
       bigFg,
       bigBg
