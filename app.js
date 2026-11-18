@@ -1,14 +1,3 @@
-/**
- * FourthTemple — TempleOS-Style Pixel Terminal & Lua Editor
- * - Grey TempleOS arrow mouse cursor with invert effect on hovered letters/symbols
- * - Top bar with only File dropdown trigger, Name, and Time
- * - 60 FPS pixel-smooth top border spinning text: "lua socket mr robot .. "
- * - 60 FPS spinning Lua circle with orbital ring, orbiting moon, and moving "Lua" text in bottom-right
- * - Palette: Blue-Grey, White, Light Blue, Dark Blue (full colors only in Lua syntax highlighting)
- * - Prompt: @TEEDTHETERRIBLE >
- * - Commands: CREATE, EDIT, EXECUTE, DELETE (flashing opposite colors on the right)
- */
-
 const TEMPLE_ARROW_CURSOR = [
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -29,17 +18,154 @@ const TEMPLE_ARROW_CURSOR = [
   [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0]
 ];
 
+const LUA_CONTROL_KEYWORDS = new Set([
+  'break', 'do', 'else', 'elseif', 'end', 'for', 'if', 'in',
+  'repeat', 'return', 'then', 'until', 'while'
+]);
+
+const LUA_STORAGE_KEYWORDS = new Set([
+  'local', 'function', 'and', 'or', 'not'
+]);
+
+const LUA_CONSTANT_KEYWORDS = new Set([
+  'true', 'false', 'nil', 'self', '_G', '_VERSION'
+]);
+
 const LUA_KEYWORDS = new Set([
-  'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
-  'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat',
-  'return', 'then', 'true', 'until', 'while'
+  ...LUA_CONTROL_KEYWORDS,
+  ...LUA_STORAGE_KEYWORDS,
+  ...LUA_CONSTANT_KEYWORDS
 ]);
 
 const LUA_BUILTINS = new Set([
   'socket', 'require', 'print', 'tostring', 'tonumber', 'pairs', 'ipairs',
   'string', 'table', 'math', 'os', 'gfx', 'tcp', 'udp', 'http', 'dns',
-  'connect', 'send', 'receive', 'bind', 'close', 'on_request'
+  'connect', 'send', 'receive', 'bind', 'close', 'on_request', 'type',
+  'assert', 'error', 'pcall'
 ]);
+
+const AUTO_CLOSE_PAIRS = {
+  '(': ')',
+  '[': ']',
+  '{': '}',
+  '"': '"',
+  "'": "'"
+};
+
+const CLOSING_CHARS = new Set([')', ']', '}', '"', "'"]);
+
+const VSCODE_LUA_SUGGESTIONS = {
+  global: [
+    { label: 'local', insert: 'local ', kind: 'kw', cursorOffset: 0 },
+    { label: 'function', insert: 'function ', kind: 'kw', cursorOffset: 0 },
+    { label: 'if', insert: 'if ', kind: 'kw', cursorOffset: 0 },
+    { label: 'then', insert: 'then', kind: 'kw', cursorOffset: 0 },
+    { label: 'elseif', insert: 'elseif ', kind: 'kw', cursorOffset: 0 },
+    { label: 'else', insert: 'else', kind: 'kw', cursorOffset: 0 },
+    { label: 'end', insert: 'end', kind: 'kw', cursorOffset: 0 },
+    { label: 'for', insert: 'for ', kind: 'kw', cursorOffset: 0 },
+    { label: 'in', insert: 'in ', kind: 'kw', cursorOffset: 0 },
+    { label: 'while', insert: 'while ', kind: 'kw', cursorOffset: 0 },
+    { label: 'do', insert: 'do', kind: 'kw', cursorOffset: 0 },
+    { label: 'repeat', insert: 'repeat', kind: 'kw', cursorOffset: 0 },
+    { label: 'until', insert: 'until ', kind: 'kw', cursorOffset: 0 },
+    { label: 'return', insert: 'return ', kind: 'kw', cursorOffset: 0 },
+    { label: 'break', insert: 'break', kind: 'kw', cursorOffset: 0 },
+    { label: 'and', insert: 'and ', kind: 'kw', cursorOffset: 0 },
+    { label: 'or', insert: 'or ', kind: 'kw', cursorOffset: 0 },
+    { label: 'not', insert: 'not ', kind: 'kw', cursorOffset: 0 },
+    { label: 'true', insert: 'true', kind: 'kw', cursorOffset: 0 },
+    { label: 'false', insert: 'false', kind: 'kw', cursorOffset: 0 },
+    { label: 'nil', insert: 'nil', kind: 'kw', cursorOffset: 0 },
+    { label: 'require', insert: 'require("socket")', kind: 'fn', cursorOffset: -2 },
+    { label: 'print', insert: 'print()', kind: 'fn', cursorOffset: -1 },
+    { label: 'tostring', insert: 'tostring()', kind: 'fn', cursorOffset: -1 },
+    { label: 'tonumber', insert: 'tonumber()', kind: 'fn', cursorOffset: -1 },
+    { label: 'type', insert: 'type()', kind: 'fn', cursorOffset: -1 },
+    { label: 'pairs', insert: 'pairs()', kind: 'fn', cursorOffset: -1 },
+    { label: 'ipairs', insert: 'ipairs()', kind: 'fn', cursorOffset: -1 },
+    { label: 'assert', insert: 'assert()', kind: 'fn', cursorOffset: -1 },
+    { label: 'error', insert: 'error()', kind: 'fn', cursorOffset: -1 },
+    { label: 'socket', insert: 'socket', kind: 'mod', cursorOffset: 0 },
+    { label: 'string', insert: 'string', kind: 'mod', cursorOffset: 0 },
+    { label: 'table', insert: 'table', kind: 'mod', cursorOffset: 0 },
+    { label: 'math', insert: 'math', kind: 'mod', cursorOffset: 0 },
+    { label: 'os', insert: 'os', kind: 'mod', cursorOffset: 0 },
+    { label: 'gfx', insert: 'gfx', kind: 'mod', cursorOffset: 0 }
+  ],
+  'socket.': [
+    { label: 'tcp', insert: 'tcp()', kind: 'fn', cursorOffset: 0 },
+    { label: 'udp', insert: 'udp()', kind: 'fn', cursorOffset: 0 },
+    { label: 'bind', insert: 'bind("127.0.0.1", 9090)', kind: 'fn', cursorOffset: -1 },
+    { label: 'connect', insert: 'connect("127.0.0.1", 9090)', kind: 'fn', cursorOffset: -1 },
+    { label: 'gettime', insert: 'gettime()', kind: 'fn', cursorOffset: 0 },
+    { label: 'sleep', insert: 'sleep(1)', kind: 'fn', cursorOffset: -1 },
+    { label: 'http', insert: 'http', kind: 'mod', cursorOffset: 0 },
+    { label: 'dns', insert: 'dns', kind: 'mod', cursorOffset: 0 }
+  ],
+  'socket.http.': [
+    { label: 'request', insert: 'request("https://api.github.com/zen")', kind: 'fn', cursorOffset: -2 },
+    { label: 'get', insert: 'get("https://api.github.com/zen")', kind: 'fn', cursorOffset: -2 }
+  ],
+  'socket.dns.': [
+    { label: 'toip', insert: 'toip("localhost")', kind: 'fn', cursorOffset: -2 },
+    { label: 'gethostname', insert: 'gethostname()', kind: 'fn', cursorOffset: 0 }
+  ],
+  'string.': [
+    { label: 'upper', insert: 'upper()', kind: 'fn', cursorOffset: -1 },
+    { label: 'lower', insert: 'lower()', kind: 'fn', cursorOffset: -1 },
+    { label: 'sub', insert: 'sub()', kind: 'fn', cursorOffset: -1 },
+    { label: 'len', insert: 'len()', kind: 'fn', cursorOffset: -1 },
+    { label: 'find', insert: 'find()', kind: 'fn', cursorOffset: -1 },
+    { label: 'gsub', insert: 'gsub()', kind: 'fn', cursorOffset: -1 },
+    { label: 'format', insert: 'format()', kind: 'fn', cursorOffset: -1 },
+    { label: 'rep', insert: 'rep()', kind: 'fn', cursorOffset: -1 },
+    { label: 'reverse', insert: 'reverse()', kind: 'fn', cursorOffset: -1 },
+    { label: 'byte', insert: 'byte()', kind: 'fn', cursorOffset: -1 },
+    { label: 'char', insert: 'char()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'table.': [
+    { label: 'insert', insert: 'insert()', kind: 'fn', cursorOffset: -1 },
+    { label: 'remove', insert: 'remove()', kind: 'fn', cursorOffset: -1 },
+    { label: 'concat', insert: 'concat()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'math.': [
+    { label: 'floor', insert: 'floor()', kind: 'fn', cursorOffset: -1 },
+    { label: 'ceil', insert: 'ceil()', kind: 'fn', cursorOffset: -1 },
+    { label: 'sqrt', insert: 'sqrt()', kind: 'fn', cursorOffset: -1 },
+    { label: 'sin', insert: 'sin()', kind: 'fn', cursorOffset: -1 },
+    { label: 'cos', insert: 'cos()', kind: 'fn', cursorOffset: -1 },
+    { label: 'abs', insert: 'abs()', kind: 'fn', cursorOffset: -1 },
+    { label: 'random', insert: 'random()', kind: 'fn', cursorOffset: -1 },
+    { label: 'max', insert: 'max()', kind: 'fn', cursorOffset: -1 },
+    { label: 'min', insert: 'min()', kind: 'fn', cursorOffset: -1 },
+    { label: 'pi', insert: 'pi', kind: 'var', cursorOffset: 0 }
+  ],
+  'os.': [
+    { label: 'clock', insert: 'clock()', kind: 'fn', cursorOffset: 0 },
+    { label: 'time', insert: 'time()', kind: 'fn', cursorOffset: 0 },
+    { label: 'date', insert: 'date()', kind: 'fn', cursorOffset: 0 },
+    { label: 'difftime', insert: 'difftime()', kind: 'fn', cursorOffset: -1 }
+  ],
+  'gfx.': [
+    { label: 'pset', insert: 'pset(x, y, 1)', kind: 'fn', cursorOffset: -1 },
+    { label: 'line', insert: 'line(x1, y1, x2, y2, 1)', kind: 'fn', cursorOffset: -1 },
+    { label: 'rect', insert: 'rect(x, y, w, h, 1, true)', kind: 'fn', cursorOffset: -1 },
+    { label: 'circle', insert: 'circle(cx, cy, r, 1)', kind: 'fn', cursorOffset: -1 },
+    { label: 'text', insert: 'text(x, y, "text", 1, 15)', kind: 'fn', cursorOffset: -1 },
+    { label: 'clear', insert: 'clear()', kind: 'fn', cursorOffset: 0 }
+  ],
+  ':': [
+    { label: 'connect', insert: 'connect("127.0.0.1", 9090)', kind: 'fn', cursorOffset: -1 },
+    { label: 'send', insert: 'send()', kind: 'fn', cursorOffset: -1 },
+    { label: 'receive', insert: 'receive("*l")', kind: 'fn', cursorOffset: -2 },
+    { label: 'close', insert: 'close()', kind: 'fn', cursorOffset: 0 },
+    { label: 'settimeout', insert: 'settimeout(2)', kind: 'fn', cursorOffset: -1 },
+    { label: 'getpeername', insert: 'getpeername()', kind: 'fn', cursorOffset: 0 },
+    { label: 'getsockname', insert: 'getsockname()', kind: 'fn', cursorOffset: 0 },
+    { label: 'on_request', insert: 'on_request(function(payload)\n  return payload\nend)', kind: 'fn', cursorOffset: 0 }
+  ]
+};
 
 class TempleTerminal {
   constructor() {
@@ -60,15 +186,16 @@ class TempleTerminal {
 
     this.hiddenInput = document.getElementById('hidden-input');
 
-    this.defaultFg = 1;  // Dark Blue text
-    this.defaultBg = 15; // White background
+    this.defaultFg = 1;
+    this.defaultBg = 15;
 
-    // Terminal state
     this.lines = [];
     this.scrollOffset = 0;
     this.promptText = '@TEEDTHETERRIBLE > ';
     this.inputBuffer = '';
     this.cursorPos = 0;
+    this.shellSelStart = null;
+    this.shellSelEnd = null;
     this.history = [
       'CREATE mrrobot',
       'EDIT mrrobot',
@@ -78,7 +205,6 @@ class TempleTerminal {
     this.historyIndex = this.history.length;
     this.busy = false;
 
-    // Mode: 'SHELL' | 'EDITOR'
     this.mode = 'SHELL';
     this.edFilename = 'mrrobot.lua';
     this.edLines = [''];
@@ -88,14 +214,23 @@ class TempleTerminal {
     this.edClipboard = '';
     this.edStatus = '';
 
-    // Top-left File dropdown menu state
+    this.selAnchor = null;
+    this.selActive = null;
+    this.isDraggingSelection = false;
+    this.lastClickTime = 0;
+
+    this.suggestions = [];
+    this.suggestIndex = 0;
+    this.suggestPrefix = '';
+    this.suggestStartCol = 0;
+    this.suggestPopupRect = null;
+
     this.fileMenuOpen = false;
     this.mouseX = 320;
     this.mouseY = 240;
     this.mouseCol = 40;
     this.mouseRow = 30;
 
-    // 60 FPS animations: top spinning text & spinning Lua circle
     this.cursorBlink = true;
     this.flashPhase = false;
     this.spinPixelOffset = 0;
@@ -117,6 +252,13 @@ class TempleTerminal {
     this.canvas.style.height = `${Math.floor(480 * scale)}px`;
   }
 
+  screenToEditorPos(col, row) {
+    const targetRow = Math.max(0, Math.min(this.edLines.length - 1, this.edScrollY + (row - 3)));
+    const lineLen = (this.edLines[targetRow] || '').length;
+    const targetCol = Math.max(0, Math.min(lineLen, col - 5));
+    return { row: targetRow, col: targetCol };
+  }
+
   bindEvents() {
     window.addEventListener('resize', () => this.updateCanvasScale());
 
@@ -128,6 +270,23 @@ class TempleTerminal {
       this.mouseY = Math.max(0, Math.min(this.height - 1, y));
       this.mouseCol = Math.floor(this.mouseX / 8);
       this.mouseRow = Math.floor(this.mouseY / 8);
+
+      if (this.mode === 'EDITOR' && this.isDraggingSelection) {
+        if (this.mouseRow < 3 && this.edScrollY > 0) {
+          this.edScrollY = Math.max(0, this.edScrollY - 1);
+        } else if (this.mouseRow > 55 && this.edScrollY < this.edLines.length - 1) {
+          this.edScrollY = Math.min(Math.max(0, this.edLines.length - 1), this.edScrollY + 1);
+        }
+        const pos = this.screenToEditorPos(this.mouseCol, Math.max(3, Math.min(55, this.mouseRow)));
+        this.edRow = pos.row;
+        this.edCol = pos.col;
+        this.selActive = { row: pos.row, col: pos.col };
+        this.suggestions = [];
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      this.isDraggingSelection = false;
     });
 
     this.canvas.addEventListener('mousedown', (e) => {
@@ -139,7 +298,7 @@ class TempleTerminal {
       this.mouseY = Math.max(0, Math.min(this.height - 1, y));
       this.mouseCol = Math.floor(this.mouseX / 8);
       this.mouseRow = Math.floor(this.mouseY / 8);
-      this.handleMouseClick(this.mouseCol, this.mouseRow);
+      this.handleMouseClick(this.mouseCol, this.mouseRow, e.shiftKey);
     });
 
     window.addEventListener('wheel', (e) => {
@@ -181,6 +340,7 @@ class TempleTerminal {
       if (!text) return;
       e.preventDefault();
       if (this.mode === 'SHELL') {
+        this.deleteShellSelection();
         const clean = text.replace(/\r?\n/g, ' ');
         this.inputBuffer =
           this.inputBuffer.slice(0, this.cursorPos) +
@@ -188,22 +348,17 @@ class TempleTerminal {
           this.inputBuffer.slice(this.cursorPos);
         this.cursorPos += clean.length;
       } else if (this.mode === 'EDITOR') {
-        const curLine = this.edLines[this.edRow] || '';
-        const clean = text.replace(/\r?\n/g, ' ');
-        this.edLines[this.edRow] = curLine.slice(0, this.edCol) + clean + curLine.slice(this.edCol);
-        this.edCol += clean.length;
+        this.insertEditorText(text.replace(/\r\n/g, '\n'));
+        this.updateEditorSuggestions();
       }
     });
   }
 
-  /* ==========================================================================
-     Mouse Click Handling (Top-Left File Dropdown & Right Flashing Commands)
-     ========================================================================== */
-
   getFileMenuItems() {
     const items = [
       { label: 'Save to Browser   ^S', action: () => this.saveCurrentFile() },
-      { label: 'Save & Exit       ^X', action: () => { this.saveCurrentFile(); this.mode = 'SHELL'; } },
+      { label: 'Save & Exit      Esc', action: () => { this.saveCurrentFile(); this.mode = 'SHELL'; } },
+      { label: 'Select All        ^A', action: () => { if (this.mode === 'EDITOR') this.selectAllEditor(); } },
       { label: 'New File (CREATE)   ', action: () => {
         const name = `script${Object.keys(this.lua.files).length + 1}.lua`;
         this.lua.cmdCreate(name);
@@ -217,7 +372,7 @@ class TempleTerminal {
       }}
     ];
     const files = Object.keys(this.lua.files).sort();
-    for (const f of files.slice(0, 7)) {
+    for (const f of files.slice(0, 6)) {
       items.push({
         label: `Open: ${f}`.slice(0, 20).padEnd(20, ' '),
         action: () => this.openEditor(f)
@@ -235,7 +390,7 @@ class TempleTerminal {
     }
   }
 
-  async handleMouseClick(col, row) {
+  async handleMouseClick(col, row, shiftKey = false) {
     if (row === 0 && col >= 0 && col <= 6) {
       this.fileMenuOpen = !this.fileMenuOpen;
       return;
@@ -255,6 +410,44 @@ class TempleTerminal {
         }
       }
       this.fileMenuOpen = false;
+      return;
+    }
+
+    if (this.mode === 'EDITOR' && this.suggestions.length > 0 && this.suggestPopupRect) {
+      const r = this.suggestPopupRect;
+      if (col >= r.col && col < r.col + r.width && row > r.row && row < r.row + r.height - 1) {
+        const clickedIdx = row - r.row - 1;
+        if (this.suggestions[clickedIdx]) {
+          this.suggestIndex = clickedIdx;
+          this.acceptEditorSuggestion();
+          return;
+        }
+      }
+    }
+
+    if (this.mode === 'EDITOR' && row >= 3 && row <= 55 && col >= 1 && col <= 78) {
+      const pos = this.screenToEditorPos(Math.max(5, col), row);
+      const now = Date.now();
+
+      if (now - this.lastClickTime < 320 && pos.row === this.edRow) {
+        this.selectWordAt(pos.row, pos.col);
+        this.lastClickTime = 0;
+        return;
+      }
+      this.lastClickTime = now;
+
+      if (shiftKey && this.selAnchor) {
+        this.edRow = pos.row;
+        this.edCol = pos.col;
+        this.selActive = { row: pos.row, col: pos.col };
+      } else {
+        this.edRow = pos.row;
+        this.edCol = pos.col;
+        this.selAnchor = { row: pos.row, col: pos.col };
+        this.selActive = null;
+        this.isDraggingSelection = true;
+      }
+      this.suggestions = [];
       return;
     }
 
@@ -281,7 +474,7 @@ class TempleTerminal {
       }
       const files = Object.keys(this.lua.files).sort();
       const fileIdx = row - 14;
-      if (fileIdx >= 0 && fileIdx < Math.min(files.length, 23)) {
+      if (fileIdx >= 0 && fileIdx < Math.min(files.length, 20)) {
         const target = files[fileIdx];
         this.inputBuffer = `EXECUTE ${target}`;
         this.cursorPos = this.inputBuffer.length;
@@ -303,12 +496,82 @@ class TempleTerminal {
     }
   }
 
-  /* ==========================================================================
-     Shell Keyboard Handling
-     ========================================================================== */
+  selectWordAt(row, col) {
+    const line = this.edLines[row] || '';
+    if (!line) return;
+    let start = Math.min(col, line.length);
+    let end = start;
+    while (start > 0 && /[a-zA-Z0-9_]/.test(line[start - 1])) start--;
+    while (end < line.length && /[a-zA-Z0-9_]/.test(line[end])) end++;
+    if (start < end) {
+      this.selAnchor = { row, col: start };
+      this.selActive = { row, col: end };
+      this.edRow = row;
+      this.edCol = end;
+    }
+  }
+
+  hasShellSelection() {
+    return this.shellSelStart !== null && this.shellSelEnd !== null && this.shellSelStart !== this.shellSelEnd;
+  }
+
+  deleteShellSelection() {
+    if (!this.hasShellSelection()) return false;
+    const s = Math.min(this.shellSelStart, this.shellSelEnd);
+    const e = Math.max(this.shellSelStart, this.shellSelEnd);
+    this.inputBuffer = this.inputBuffer.slice(0, s) + this.inputBuffer.slice(e);
+    this.cursorPos = s;
+    this.shellSelStart = null;
+    this.shellSelEnd = null;
+    return true;
+  }
 
   async handleShellKey(e) {
     if (this.busy) return;
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      this.shellSelStart = 0;
+      this.shellSelEnd = this.inputBuffer.length;
+      this.cursorPos = this.inputBuffer.length;
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+      if (this.hasShellSelection()) {
+        e.preventDefault();
+        const s = Math.min(this.shellSelStart, this.shellSelEnd);
+        const end = Math.max(this.shellSelStart, this.shellSelEnd);
+        const copied = this.inputBuffer.slice(s, end);
+        this.edClipboard = copied;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(copied).catch(() => {});
+        }
+        return;
+      }
+      e.preventDefault();
+      this.printLine(`${this.promptText}${this.inputBuffer}^C`, 8, 15);
+      this.inputBuffer = '';
+      this.cursorPos = 0;
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+      if (this.hasShellSelection()) {
+        e.preventDefault();
+        const s = Math.min(this.shellSelStart, this.shellSelEnd);
+        const end = Math.max(this.shellSelStart, this.shellSelEnd);
+        const cut = this.inputBuffer.slice(s, end);
+        this.edClipboard = cut;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(cut).catch(() => {});
+        }
+        this.deleteShellSelection();
+      }
+      return;
+    }
 
     if (e.ctrlKey && e.key.toLowerCase() === 'l') {
       e.preventDefault();
@@ -316,11 +579,29 @@ class TempleTerminal {
       return;
     }
 
-    if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+    if (e.key === 'Tab') {
       e.preventDefault();
-      this.printLine(`${this.promptText}${this.inputBuffer}^C`, 8, 15);
-      this.inputBuffer = '';
-      this.cursorPos = 0;
+      const trimmed = this.inputBuffer.trimStart();
+      const parts = trimmed.split(/\s+/);
+      if (parts.length <= 1) {
+        const cmds = ['CREATE ', 'EDIT ', 'EXECUTE ', 'DELETE '];
+        const match = cmds.find(c => c.startsWith(trimmed.toUpperCase()));
+        if (match) {
+          this.inputBuffer = match;
+          this.cursorPos = this.inputBuffer.length;
+        }
+      } else {
+        const verb = parts[0].toUpperCase();
+        const filePrefix = parts[1].toLowerCase();
+        const files = Object.keys(this.lua.files).sort();
+        const fMatch = files.find(f => f.toLowerCase().startsWith(filePrefix));
+        if (fMatch) {
+          this.inputBuffer = `${verb} ${fMatch}`;
+          this.cursorPos = this.inputBuffer.length;
+        }
+      }
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
       return;
     }
 
@@ -334,6 +615,8 @@ class TempleTerminal {
       this.historyIndex = this.history.length;
       this.inputBuffer = '';
       this.cursorPos = 0;
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
       this.scrollOffset = 0;
 
       this.busy = true;
@@ -344,17 +627,28 @@ class TempleTerminal {
 
     if (e.key === 'Backspace') {
       e.preventDefault();
+      if (this.deleteShellSelection()) return;
       if (this.cursorPos > 0) {
-        this.inputBuffer =
-          this.inputBuffer.slice(0, this.cursorPos - 1) +
-          this.inputBuffer.slice(this.cursorPos);
-        this.cursorPos--;
+        const prevCh = this.inputBuffer[this.cursorPos - 1];
+        const nextCh = this.inputBuffer[this.cursorPos];
+        if (AUTO_CLOSE_PAIRS[prevCh] && AUTO_CLOSE_PAIRS[prevCh] === nextCh) {
+          this.inputBuffer =
+            this.inputBuffer.slice(0, this.cursorPos - 1) +
+            this.inputBuffer.slice(this.cursorPos + 1);
+          this.cursorPos--;
+        } else {
+          this.inputBuffer =
+            this.inputBuffer.slice(0, this.cursorPos - 1) +
+            this.inputBuffer.slice(this.cursorPos);
+          this.cursorPos--;
+        }
       }
       return;
     }
 
     if (e.key === 'Delete') {
       e.preventDefault();
+      if (this.deleteShellSelection()) return;
       if (this.cursorPos < this.inputBuffer.length) {
         this.inputBuffer =
           this.inputBuffer.slice(0, this.cursorPos) +
@@ -365,30 +659,52 @@ class TempleTerminal {
 
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      if (this.cursorPos > 0) this.cursorPos--;
+      if (e.shiftKey) {
+        if (this.shellSelStart === null) this.shellSelStart = this.cursorPos;
+        if (this.cursorPos > 0) this.cursorPos--;
+        this.shellSelEnd = this.cursorPos;
+      } else {
+        this.shellSelStart = null;
+        this.shellSelEnd = null;
+        if (this.cursorPos > 0) this.cursorPos--;
+      }
       return;
     }
 
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      if (this.cursorPos < this.inputBuffer.length) this.cursorPos++;
+      if (e.shiftKey) {
+        if (this.shellSelStart === null) this.shellSelStart = this.cursorPos;
+        if (this.cursorPos < this.inputBuffer.length) this.cursorPos++;
+        this.shellSelEnd = this.cursorPos;
+      } else {
+        this.shellSelStart = null;
+        this.shellSelEnd = null;
+        if (this.cursorPos < this.inputBuffer.length) this.cursorPos++;
+      }
       return;
     }
 
     if (e.key === 'Home') {
       e.preventDefault();
       this.cursorPos = 0;
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
       return;
     }
 
     if (e.key === 'End') {
       e.preventDefault();
       this.cursorPos = this.inputBuffer.length;
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
       return;
     }
 
     if (e.key === 'ArrowUp') {
       e.preventDefault();
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
       if (this.historyIndex > 0) {
         this.historyIndex--;
         this.inputBuffer = this.history[this.historyIndex] || '';
@@ -399,6 +715,8 @@ class TempleTerminal {
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      this.shellSelStart = null;
+      this.shellSelEnd = null;
       if (this.historyIndex < this.history.length) {
         this.historyIndex++;
         this.inputBuffer = this.history[this.historyIndex] || '';
@@ -409,29 +727,45 @@ class TempleTerminal {
 
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
+      this.deleteShellSelection();
+      const ch = e.key;
+      const nextCh = this.inputBuffer[this.cursorPos];
+      if (CLOSING_CHARS.has(ch) && nextCh === ch) {
+        this.cursorPos++;
+        return;
+      }
+      if (AUTO_CLOSE_PAIRS[ch]) {
+        const closeCh = AUTO_CLOSE_PAIRS[ch];
+        this.inputBuffer =
+          this.inputBuffer.slice(0, this.cursorPos) +
+          ch + closeCh +
+          this.inputBuffer.slice(this.cursorPos);
+        this.cursorPos++;
+        return;
+      }
       this.inputBuffer =
         this.inputBuffer.slice(0, this.cursorPos) +
-        e.key +
+        ch +
         this.inputBuffer.slice(this.cursorPos);
       this.cursorPos++;
       this.scrollOffset = 0;
     }
   }
 
-  /* ==========================================================================
-     Editor Mode (Syntax Highlighting + Nano & VS Code Controls)
-     ========================================================================== */
-
   openEditor(filename) {
     this.edFilename = this.lua.normalizeFilename(filename);
     const existing = this.lua.files[this.edFilename];
     this.edLines = existing !== undefined
       ? existing.replace(/\r\n/g, '\n').split('\n')
-      : [`-- ${this.edFilename}`, ''];
+      : [`--!${this.edFilename}`, ''];
     if (this.edLines.length === 0) this.edLines = [''];
     this.edRow = 0;
     this.edCol = 0;
     this.edScrollY = 0;
+    this.selAnchor = null;
+    this.selActive = null;
+    this.suggestions = [];
+    this.suggestIndex = 0;
     this.edStatus = `[ Editing ${this.edFilename} ]`;
     this.mode = 'EDITOR';
   }
@@ -442,7 +776,309 @@ class TempleTerminal {
     this.edStatus = `[ Wrote ${this.edLines.length} lines to ${this.edFilename} (Saved in Browser) ]`;
   }
 
+  hasEditorSelection() {
+    if (!this.selAnchor || !this.selActive) return false;
+    return this.selAnchor.row !== this.selActive.row || this.selAnchor.col !== this.selActive.col;
+  }
+
+  getNormalizedSelection() {
+    if (!this.hasEditorSelection()) return null;
+    const a = this.selAnchor;
+    const b = this.selActive;
+    if (a.row < b.row || (a.row === b.row && a.col <= b.col)) {
+      return { startRow: a.row, startCol: a.col, endRow: b.row, endCol: b.col };
+    }
+    return { startRow: b.row, startCol: b.col, endRow: a.row, endCol: a.col };
+  }
+
+  clearEditorSelection() {
+    this.selAnchor = null;
+    this.selActive = null;
+  }
+
+  selectAllEditor() {
+    const lastRow = Math.max(0, this.edLines.length - 1);
+    const lastCol = (this.edLines[lastRow] || '').length;
+    this.selAnchor = { row: 0, col: 0 };
+    this.selActive = { row: lastRow, col: lastCol };
+    this.edRow = lastRow;
+    this.edCol = lastCol;
+    this.suggestions = [];
+    this.edStatus = `[ Selected All (${this.edLines.length} lines) ]`;
+  }
+
+  getSelectedText() {
+    const sel = this.getNormalizedSelection();
+    if (!sel) return '';
+    if (sel.startRow === sel.endRow) {
+      return (this.edLines[sel.startRow] || '').slice(sel.startCol, sel.endCol);
+    }
+    const parts = [];
+    parts.push((this.edLines[sel.startRow] || '').slice(sel.startCol));
+    for (let r = sel.startRow + 1; r < sel.endRow; r++) {
+      parts.push(this.edLines[r] || '');
+    }
+    parts.push((this.edLines[sel.endRow] || '').slice(0, sel.endCol));
+    return parts.join('\n');
+  }
+
+  deleteEditorSelection() {
+    const sel = this.getNormalizedSelection();
+    if (!sel) return false;
+    const before = (this.edLines[sel.startRow] || '').slice(0, sel.startCol);
+    const after = (this.edLines[sel.endRow] || '').slice(sel.endCol);
+    this.edLines.splice(sel.startRow, sel.endRow - sel.startRow + 1, before + after);
+    if (this.edLines.length === 0) this.edLines = [''];
+    this.edRow = sel.startRow;
+    this.edCol = sel.startCol;
+    this.clearEditorSelection();
+    this.ensureEditorCursorVisible();
+    return true;
+  }
+
+  insertEditorText(text) {
+    if (this.hasEditorSelection()) {
+      this.deleteEditorSelection();
+    }
+    const curLine = this.edLines[this.edRow] || '';
+    const before = curLine.slice(0, this.edCol);
+    const after = curLine.slice(this.edCol);
+    const incoming = String(text).split('\n');
+    if (incoming.length === 1) {
+      this.edLines[this.edRow] = before + incoming[0] + after;
+      this.edCol += incoming[0].length;
+    } else {
+      const midLines = incoming.slice(1, -1);
+      const firstLine = before + incoming[0];
+      const lastLine = incoming[incoming.length - 1] + after;
+      this.edLines.splice(this.edRow, 1, firstLine, ...midLines, lastLine);
+      this.edRow += incoming.length - 1;
+      this.edCol = incoming[incoming.length - 1].length;
+    }
+    this.ensureEditorCursorVisible();
+  }
+
+  ensureEditorCursorVisible() {
+    if (this.edRow < this.edScrollY) {
+      this.edScrollY = this.edRow;
+    } else if (this.edRow >= this.edScrollY + 53) {
+      this.edScrollY = this.edRow - 52;
+    }
+  }
+
+  moveCursorWithShift(newRow, newCol, shiftKey) {
+    if (shiftKey) {
+      if (!this.selAnchor) {
+        this.selAnchor = { row: this.edRow, col: this.edCol };
+      }
+      this.edRow = newRow;
+      this.edCol = newCol;
+      this.selActive = { row: newRow, col: newCol };
+    } else {
+      this.edRow = newRow;
+      this.edCol = newCol;
+      this.clearEditorSelection();
+    }
+    this.ensureEditorCursorVisible();
+  }
+
+  collectDocumentSymbols() {
+    const found = new Map();
+    for (let r = 0; r < this.edLines.length; r++) {
+      const line = this.edLines[r];
+      const matches = line.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g);
+      for (const m of matches) {
+        const word = m[1];
+        if (word.length < 2) continue;
+        if (LUA_KEYWORDS.has(word) || LUA_BUILTINS.has(word)) continue;
+        if (r === this.edRow && m.index <= this.edCol && m.index + word.length >= this.edCol) {
+          continue;
+        }
+        if (!found.has(word)) {
+          found.set(word, { label: word, insert: word, kind: 'var', cursorOffset: 0 });
+        }
+      }
+    }
+    return Array.from(found.values());
+  }
+
+  updateEditorSuggestions(forceOpen = false) {
+    if (this.hasEditorSelection()) {
+      this.suggestions = [];
+      return;
+    }
+    const line = this.edLines[this.edRow] || '';
+    const before = line.slice(0, this.edCol);
+    const prevSelectedLabel = this.suggestions[this.suggestIndex]?.label || null;
+
+    let pool = [];
+    let prefix = '';
+    let startCol = this.edCol;
+
+    const memberMatch = before.match(/([a-zA-Z_][a-zA-Z0-9_.]*)([.:])([a-zA-Z0-9_]*)$/);
+    if (memberMatch) {
+      const objName = memberMatch[1];
+      const sep = memberMatch[2];
+      prefix = memberMatch[3];
+      startCol = this.edCol - prefix.length;
+
+      if (sep === ':') {
+        pool = VSCODE_LUA_SUGGESTIONS[':'] || [];
+      } else {
+        const key = `${objName}.`;
+        pool = VSCODE_LUA_SUGGESTIONS[key] || [];
+      }
+    } else {
+      const wordMatch = before.match(/([a-zA-Z_][a-zA-Z0-9_]*)$/);
+      if (wordMatch) {
+        prefix = wordMatch[1];
+        startCol = this.edCol - prefix.length;
+        pool = [...VSCODE_LUA_SUGGESTIONS.global, ...this.collectDocumentSymbols()];
+      } else if (forceOpen) {
+        prefix = '';
+        startCol = this.edCol;
+        pool = [...VSCODE_LUA_SUGGESTIONS.global, ...this.collectDocumentSymbols()];
+      }
+    }
+
+    if (!forceOpen && prefix.length === 0 && !memberMatch) {
+      this.suggestions = [];
+      this.suggestIndex = 0;
+      this.suggestPrefix = '';
+      return;
+    }
+
+    const lowPrefix = prefix.toLowerCase();
+    const filtered = pool
+      .filter(item => {
+        if (!lowPrefix) return true;
+        const lowLabel = item.label.toLowerCase();
+        return lowLabel.startsWith(lowPrefix) && lowLabel !== lowPrefix;
+      })
+      .sort((a, b) => {
+        const aExact = a.label.startsWith(prefix) ? 0 : 1;
+        const bExact = b.label.startsWith(prefix) ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
+        return a.label.localeCompare(b.label);
+      })
+      .slice(0, 6);
+
+    this.suggestions = filtered;
+    this.suggestPrefix = prefix;
+    this.suggestStartCol = startCol;
+
+    if (prevSelectedLabel) {
+      const keptIdx = filtered.findIndex(x => x.label === prevSelectedLabel);
+      this.suggestIndex = keptIdx !== -1 ? keptIdx : 0;
+    } else {
+      this.suggestIndex = 0;
+    }
+  }
+
+  acceptEditorSuggestion() {
+    if (this.suggestions.length === 0) return false;
+    const item = this.suggestions[this.suggestIndex] || this.suggestions[0];
+    const line = this.edLines[this.edRow] || '';
+    const before = line.slice(0, this.suggestStartCol);
+    const after = line.slice(this.edCol);
+
+    const insertLines = item.insert.split('\n');
+    if (insertLines.length === 1) {
+      this.edLines[this.edRow] = before + item.insert + after;
+      this.edCol = before.length + item.insert.length + (item.cursorOffset || 0);
+    } else {
+      const indentMatch = before.match(/^(\s*)/);
+      const baseIndent = indentMatch ? indentMatch[1] : '';
+      this.edLines[this.edRow] = before + insertLines[0];
+      for (let i = 1; i < insertLines.length; i++) {
+        const content = baseIndent + insertLines[i] + (i === insertLines.length - 1 ? after : '');
+        this.edLines.splice(this.edRow + i, 0, content);
+      }
+      this.edRow += 1;
+      this.edCol = baseIndent.length + 2;
+    }
+
+    this.suggestions = [];
+    this.suggestIndex = 0;
+    return true;
+  }
+
+  needsAutoEnd() {
+    let balance = 0;
+    for (const line of this.edLines) {
+      const tokens = line.replace(/--.*$/, '').match(/\b(function|if|for|while|repeat|end|until)\b/g) || [];
+      for (const tok of tokens) {
+        if (['function', 'if', 'for', 'while', 'repeat'].includes(tok)) balance++;
+        else if (tok === 'end' || tok === 'until') balance--;
+      }
+    }
+    return balance > 0;
+  }
+
   async handleEditorKey(e) {
+    if (e.ctrlKey && e.code === 'Space') {
+      e.preventDefault();
+      this.updateEditorSuggestions(true);
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      this.selectAllEditor();
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+      if (this.hasEditorSelection()) {
+        e.preventDefault();
+        const text = this.getSelectedText();
+        this.edClipboard = text;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(() => {});
+        }
+        this.edStatus = `[ Copied ${text.length} chars ]`;
+      }
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+      e.preventDefault();
+      if (this.hasEditorSelection()) {
+        const text = this.getSelectedText();
+        this.edClipboard = text;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(() => {});
+        }
+        this.deleteEditorSelection();
+        this.edStatus = `[ Cut ${text.length} chars ]`;
+        return;
+      }
+      this.saveEditor();
+      this.mode = 'SHELL';
+      this.printLine(`Saved ${this.edFilename}.`, 1, 15);
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        e.preventDefault();
+        try {
+          const clipText = await navigator.clipboard.readText();
+          if (clipText) {
+            this.insertEditorText(clipText.replace(/\r\n/g, '\n'));
+            this.updateEditorSuggestions();
+            return;
+          }
+        } catch {}
+      }
+      if (this.edClipboard) {
+        e.preventDefault();
+        this.insertEditorText(this.edClipboard);
+        this.updateEditorSuggestions();
+      }
+      return;
+    }
+
     if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'o')) {
       e.preventDefault();
       this.saveEditor();
@@ -459,6 +1095,8 @@ class TempleTerminal {
         this.edLines[0] = '';
       }
       this.edCol = 0;
+      this.clearEditorSelection();
+      this.suggestions = [];
       this.edStatus = `[ Cut 1 line ]`;
       return;
     }
@@ -466,9 +1104,9 @@ class TempleTerminal {
     if (e.ctrlKey && e.key.toLowerCase() === 'u') {
       e.preventDefault();
       if (this.edClipboard !== '') {
-        this.edLines.splice(this.edRow, 0, this.edClipboard);
-        this.edRow++;
-        this.edStatus = `[ Pasted line ]`;
+        this.insertEditorText(this.edClipboard);
+        this.suggestions = [];
+        this.edStatus = `[ Pasted ]`;
       }
       return;
     }
@@ -483,92 +1121,238 @@ class TempleTerminal {
       return;
     }
 
-    if (e.key === 'Escape' || (e.ctrlKey && e.key.toLowerCase() === 'x')) {
+    if (e.key === 'Escape') {
       e.preventDefault();
+      if (this.suggestions.length > 0) {
+        this.suggestions = [];
+        return;
+      }
+      if (this.hasEditorSelection()) {
+        this.clearEditorSelection();
+        return;
+      }
       this.saveEditor();
       this.mode = 'SHELL';
       this.printLine(`Saved ${this.edFilename}.`, 1, 15);
       return;
     }
 
+    if (this.suggestions.length > 0 && !e.shiftKey) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        this.suggestIndex = (this.suggestIndex + 1) % this.suggestions.length;
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        this.suggestIndex = (this.suggestIndex - 1 + this.suggestions.length) % this.suggestions.length;
+        return;
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        this.acceptEditorSuggestion();
+        return;
+      }
+    }
+
     const curLine = this.edLines[this.edRow] || '';
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (this.hasEditorSelection()) {
+        const sel = this.getNormalizedSelection();
+        for (let r = sel.startRow; r <= sel.endRow; r++) {
+          if (e.shiftKey) {
+            this.edLines[r] = (this.edLines[r] || '').replace(/^ {1,2}/, '');
+          } else {
+            this.edLines[r] = '  ' + (this.edLines[r] || '');
+          }
+        }
+        this.edCol = (this.edLines[this.edRow] || '').length;
+        return;
+      }
+
+      if (e.shiftKey) {
+        const removed = curLine.startsWith('  ') ? 2 : (curLine.startsWith(' ') ? 1 : 0);
+        if (removed > 0) {
+          this.edLines[this.edRow] = curLine.slice(removed);
+          this.edCol = Math.max(0, this.edCol - removed);
+        }
+        return;
+      }
+
+      const afterCursor = curLine.slice(this.edCol);
+      const jumpMatch = afterCursor.match(/^(\s*["')\]}]+|,\s*)/);
+      if (jumpMatch) {
+        this.edCol += jumpMatch[0].length;
+        this.suggestions = [];
+        return;
+      }
+
+      const spacesToNextTabStop = 2 - (this.edCol % 2);
+      const pad = ' '.repeat(spacesToNextTabStop);
+      this.edLines[this.edRow] = curLine.slice(0, this.edCol) + pad + curLine.slice(this.edCol);
+      this.edCol += pad.length;
+      return;
+    }
 
     if (e.key === 'ArrowUp') {
       e.preventDefault();
+      this.suggestions = [];
       if (this.edRow > 0) {
-        this.edRow--;
-        this.edCol = Math.min(this.edCol, this.edLines[this.edRow].length);
-        if (this.edRow < this.edScrollY) this.edScrollY = this.edRow;
+        const nextRow = this.edRow - 1;
+        const nextCol = Math.min(this.edCol, this.edLines[nextRow].length);
+        this.moveCursorWithShift(nextRow, nextCol, e.shiftKey);
+      } else if (!e.shiftKey) {
+        this.clearEditorSelection();
       }
       return;
     }
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      this.suggestions = [];
       if (this.edRow < this.edLines.length - 1) {
-        this.edRow++;
-        this.edCol = Math.min(this.edCol, this.edLines[this.edRow].length);
-        if (this.edRow >= this.edScrollY + 53) this.edScrollY = this.edRow - 52;
+        const nextRow = this.edRow + 1;
+        const nextCol = Math.min(this.edCol, this.edLines[nextRow].length);
+        this.moveCursorWithShift(nextRow, nextCol, e.shiftKey);
+      } else if (!e.shiftKey) {
+        this.clearEditorSelection();
       }
       return;
     }
 
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      if (this.edCol > 0) {
-        this.edCol--;
-      } else if (this.edRow > 0) {
-        this.edRow--;
-        this.edCol = this.edLines[this.edRow].length;
+      if (!e.shiftKey && this.hasEditorSelection()) {
+        const sel = this.getNormalizedSelection();
+        this.edRow = sel.startRow;
+        this.edCol = sel.startCol;
+        this.clearEditorSelection();
+        this.updateEditorSuggestions();
+        return;
       }
+      let nextRow = this.edRow;
+      let nextCol = this.edCol;
+      if (nextCol > 0) {
+        nextCol--;
+      } else if (nextRow > 0) {
+        nextRow--;
+        nextCol = this.edLines[nextRow].length;
+      }
+      this.moveCursorWithShift(nextRow, nextCol, e.shiftKey);
+      this.updateEditorSuggestions();
       return;
     }
 
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      if (this.edCol < curLine.length) {
-        this.edCol++;
-      } else if (this.edRow < this.edLines.length - 1) {
-        this.edRow++;
-        this.edCol = 0;
+      if (!e.shiftKey && this.hasEditorSelection()) {
+        const sel = this.getNormalizedSelection();
+        this.edRow = sel.endRow;
+        this.edCol = sel.endCol;
+        this.clearEditorSelection();
+        this.updateEditorSuggestions();
+        return;
       }
+      let nextRow = this.edRow;
+      let nextCol = this.edCol;
+      if (nextCol < curLine.length) {
+        nextCol++;
+      } else if (nextRow < this.edLines.length - 1) {
+        nextRow++;
+        nextCol = 0;
+      }
+      this.moveCursorWithShift(nextRow, nextCol, e.shiftKey);
+      this.updateEditorSuggestions();
       return;
     }
 
     if (e.key === 'Home') {
       e.preventDefault();
-      this.edCol = 0;
+      const firstNonSpace = (curLine.match(/^\s*/) || [''])[0].length;
+      const targetCol = this.edCol === firstNonSpace ? 0 : firstNonSpace;
+      this.moveCursorWithShift(this.edRow, targetCol, e.shiftKey);
+      this.suggestions = [];
       return;
     }
 
     if (e.key === 'End') {
       e.preventDefault();
-      this.edCol = curLine.length;
+      this.moveCursorWithShift(this.edRow, curLine.length, e.shiftKey);
+      this.suggestions = [];
       return;
     }
 
     if (e.key === 'Enter') {
       e.preventDefault();
-      const before = curLine.slice(0, this.edCol);
-      const after = curLine.slice(this.edCol);
+      this.suggestions = [];
+      if (this.hasEditorSelection()) {
+        this.deleteEditorSelection();
+      }
+      const lineNow = this.edLines[this.edRow] || '';
+      const before = lineNow.slice(0, this.edCol);
+      const after = lineNow.slice(this.edCol);
       const indentMatch = before.match(/^(\s*)/);
       const baseIndent = indentMatch ? indentMatch[1] : '';
-      const extraIndent = /\b(then|do|function|repeat)\s*$/.test(before.trim()) ? '  ' : '';
-      const nextIndent = baseIndent + extraIndent;
+      const trimmedBefore = before.trim();
 
-      this.edLines[this.edRow] = before;
-      this.edLines.splice(this.edRow + 1, 0, nextIndent + after);
-      this.edRow++;
-      this.edCol = nextIndent.length;
-      if (this.edRow >= this.edScrollY + 53) this.edScrollY = this.edRow - 52;
+      const opensBlock =
+        /\b(then|do|repeat)\s*$/.test(trimmedBefore) ||
+        /^(local\s+)?function\b.*\)\s*$/.test(trimmedBefore) ||
+        /\bfunction\s*\([^)]*\)\s*$/.test(trimmedBefore);
+
+      const betweenBraces =
+        (before.endsWith('{') && after.startsWith('}')) ||
+        (before.endsWith('(') && after.startsWith(')'));
+
+      if (betweenBraces) {
+        const innerIndent = baseIndent + '  ';
+        this.edLines[this.edRow] = before;
+        this.edLines.splice(this.edRow + 1, 0, innerIndent, baseIndent + after);
+        this.edRow++;
+        this.edCol = innerIndent.length;
+      } else if (opensBlock) {
+        const nextIndent = baseIndent + '  ';
+        this.edLines[this.edRow] = before;
+        this.edLines.splice(this.edRow + 1, 0, nextIndent + after);
+        if (this.needsAutoEnd()) {
+          const closeKw = /\brepeat\s*$/.test(trimmedBefore) ? 'until false' : 'end';
+          const closingSuffix = after.startsWith(')') ? ')' : '';
+          if (closingSuffix) {
+            this.edLines[this.edRow + 1] = nextIndent + after.slice(1);
+          }
+          this.edLines.splice(this.edRow + 2, 0, baseIndent + closeKw + closingSuffix);
+        }
+        this.edRow++;
+        this.edCol = nextIndent.length;
+      } else {
+        this.edLines[this.edRow] = before;
+        this.edLines.splice(this.edRow + 1, 0, baseIndent + after);
+        this.edRow++;
+        this.edCol = baseIndent.length;
+      }
+
+      this.ensureEditorCursorVisible();
       return;
     }
 
     if (e.key === 'Backspace') {
       e.preventDefault();
+      if (this.deleteEditorSelection()) {
+        this.updateEditorSuggestions();
+        return;
+      }
       if (this.edCol > 0) {
-        this.edLines[this.edRow] = curLine.slice(0, this.edCol - 1) + curLine.slice(this.edCol);
-        this.edCol--;
+        const prevCh = curLine[this.edCol - 1];
+        const nextCh = curLine[this.edCol];
+        if (AUTO_CLOSE_PAIRS[prevCh] && AUTO_CLOSE_PAIRS[prevCh] === nextCh) {
+          this.edLines[this.edRow] = curLine.slice(0, this.edCol - 1) + curLine.slice(this.edCol + 1);
+          this.edCol--;
+        } else {
+          this.edLines[this.edRow] = curLine.slice(0, this.edCol - 1) + curLine.slice(this.edCol);
+          this.edCol--;
+        }
       } else if (this.edRow > 0) {
         const prevLen = this.edLines[this.edRow - 1].length;
         this.edLines[this.edRow - 1] += curLine;
@@ -576,37 +1360,72 @@ class TempleTerminal {
         this.edRow--;
         this.edCol = prevLen;
       }
+      this.ensureEditorCursorVisible();
+      this.updateEditorSuggestions();
       return;
     }
 
     if (e.key === 'Delete') {
       e.preventDefault();
+      if (this.deleteEditorSelection()) {
+        this.updateEditorSuggestions();
+        return;
+      }
       if (this.edCol < curLine.length) {
         this.edLines[this.edRow] = curLine.slice(0, this.edCol) + curLine.slice(this.edCol + 1);
       } else if (this.edRow < this.edLines.length - 1) {
         this.edLines[this.edRow] += this.edLines[this.edRow + 1];
         this.edLines.splice(this.edRow + 1, 1);
       }
-      return;
-    }
-
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      this.edLines[this.edRow] = curLine.slice(0, this.edCol) + '  ' + curLine.slice(this.edCol);
-      this.edCol += 2;
+      this.updateEditorSuggestions();
       return;
     }
 
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
-      this.edLines[this.edRow] = curLine.slice(0, this.edCol) + e.key + curLine.slice(this.edCol);
+      const ch = e.key;
+
+      if (this.hasEditorSelection() && AUTO_CLOSE_PAIRS[ch]) {
+        const selected = this.getSelectedText();
+        if (!selected.includes('\n')) {
+          const closeCh = AUTO_CLOSE_PAIRS[ch];
+          this.insertEditorText(ch + selected + closeCh);
+          return;
+        }
+      }
+
+      if (this.hasEditorSelection()) {
+        this.deleteEditorSelection();
+      }
+
+      const lineAfterDel = this.edLines[this.edRow] || '';
+      const nextCh = lineAfterDel[this.edCol];
+
+      if (CLOSING_CHARS.has(ch) && nextCh === ch) {
+        this.edCol++;
+        this.updateEditorSuggestions();
+        return;
+      }
+
+      if (AUTO_CLOSE_PAIRS[ch]) {
+        const closeCh = AUTO_CLOSE_PAIRS[ch];
+        const shouldAutoClose = !nextCh || /[\s)\]};,]/.test(nextCh);
+        if (shouldAutoClose) {
+          this.edLines[this.edRow] =
+            lineAfterDel.slice(0, this.edCol) +
+            ch + closeCh +
+            lineAfterDel.slice(this.edCol);
+          this.edCol++;
+          this.updateEditorSuggestions();
+          return;
+        }
+      }
+
+      this.edLines[this.edRow] = lineAfterDel.slice(0, this.edCol) + ch + lineAfterDel.slice(this.edCol);
       this.edCol++;
+      this.updateEditorSuggestions();
     }
   }
-
-  /* ==========================================================================
-     Terminal Output & Graphics Primitives
-     ========================================================================== */
 
   printLine(text, fg = this.defaultFg, bg = this.defaultBg) {
     const rawLines = String(text ?? '').split('\n');
@@ -713,10 +1532,6 @@ class TempleTerminal {
     }
   }
 
-  /* ==========================================================================
-     Direct Framebuffer Pixel Helper
-     ========================================================================== */
-
   setFbPixel(x, y, colorIdx, isStroke = true) {
     const px = Math.trunc(x);
     const py = Math.trunc(y);
@@ -730,10 +1545,6 @@ class TempleTerminal {
     this.pixels[offset + 2] = rgb[2];
     this.pixels[offset + 3] = 255;
   }
-
-  /* ==========================================================================
-     Pixel Framebuffer Rasterizer (80x60 8x8 Cells)
-     ========================================================================== */
 
   putCell(col, row, ch, fg = 0, bg = 15) {
     if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) return;
@@ -780,10 +1591,6 @@ class TempleTerminal {
     }
   }
 
-  /* ==========================================================================
-     Top Bar (Only File Dropdown, Name, and Time)
-     ========================================================================== */
-
   renderTopBar() {
     const now = new Date();
     const timeStr = now.toTimeString().split(' ')[0];
@@ -800,10 +1607,6 @@ class TempleTerminal {
     this.putString(80 - timeStr.length - 1, 0, timeStr, 15, 1);
   }
 
-  /* ==========================================================================
-     Window Border with 60 FPS Pixel-Scrolling Top Marquee
-     ========================================================================== */
-
   renderWindowBorder() {
     this.putCell(0, 1, '╔', 1, 15);
     for (let c = 1; c < 79; c++) this.putCell(c, 1, '═', 1, 15);
@@ -818,7 +1621,7 @@ class TempleTerminal {
     for (let c = 1; c < 79; c++) this.putCell(c, 59, '═', 1, 15);
     this.putCell(79, 59, '╝', 1, 15);
 
-    const unit = ' DIVINE FUCKING INTELLECT ';
+    const unit = 'casper the terrible .. ';
     const unitPxLen = unit.length * 8;
     const boxWidthCells = 28;
     const boxStartCol = Math.floor((80 - boxWidthCells) / 2);
@@ -855,19 +1658,14 @@ class TempleTerminal {
     }
   }
 
-  /* ==========================================================================
-     60 FPS 3D Spinning Sphere (with 3D Inner White Ball) + 3D Rotating Ring
-     ========================================================================== */
-
   renderLuaCircle() {
-    const cx = 542;
-    const cy = 402;
-    const planetRadius = 26;
-    const orbitRadius = 46;
-    const fov = 160;
-    const camDist = 110;
+    const cx = 544;
+    const cy = 386;
+    const planetRadius = 44;
+    const orbitRadius = 76;
+    const fov = 220;
+    const camDist = 140;
 
-    // 3D rotation angles for the ring & sphere
     const rxAngle = this.orbitAngle * 0.75;
     const ryAngle = this.orbitAngle * 1.1;
     const rzAngle = this.orbitAngle * 0.45;
@@ -877,15 +1675,12 @@ class TempleTerminal {
     const sinZ = Math.sin(rzAngle), cosZ = Math.cos(rzAngle);
 
     const rotate3D = (vx, vy, vz) => {
-      // Rotate around X
       const y1 = vy * cosX - vz * sinX;
       const z1 = vy * sinX + vz * cosX;
       const x1 = vx;
-      // Rotate around Y
       const x2 = x1 * cosY + z1 * sinY;
       const z2 = -x1 * sinY + z1 * cosY;
       const y2 = y1;
-      // Rotate around Z
       const x3 = x2 * cosZ - y2 * sinZ;
       const y3 = x2 * sinZ + y2 * cosZ;
       const z3 = z2;
@@ -902,29 +1697,28 @@ class TempleTerminal {
     };
 
     const drawRing3D = (onlyBehindSphere) => {
-      const steps = 84;
+      const steps = 120;
       for (let s = 0; s < steps; s++) {
-        // Dashed 3D ring segments
-        if (s % 3 === 0) continue;
+        if (s % 4 === 0) continue;
         const theta = (s / steps) * Math.PI * 2;
         const p = rotate3D(
           Math.cos(theta) * orbitRadius,
           Math.sin(theta) * orbitRadius,
           0
         );
-        // Positive z is further away (behind sphere), negative z is closer (in front of sphere)
         if (onlyBehindSphere && p.z < 0) continue;
         if (!onlyBehindSphere && p.z >= 0) continue;
 
         const color = p.z < 0 ? 1 : 7;
         this.setFbPixel(p.x, p.y, color, true);
+        this.setFbPixel(p.x + 1, p.y, color, true);
+        this.setFbPixel(p.x, p.y + 1, color, true);
         if (p.z < 0) {
-          this.setFbPixel(p.x + 1, p.y, color, true);
+          this.setFbPixel(p.x + 1, p.y + 1, color, true);
         }
       }
     };
 
-    // Orbiting 3D Moon ball traveling along the 3D rotating ring
     const moonTheta = this.orbitAngle * 1.6;
     const moonPos = rotate3D(
       Math.cos(moonTheta) * orbitRadius,
@@ -933,7 +1727,7 @@ class TempleTerminal {
     );
 
     const drawOrbitingMoon = () => {
-      const mR = Math.max(3, Math.round(5 * (fov / (fov + moonPos.z + camDist))));
+      const mR = Math.max(5, Math.round(9 * (fov / (fov + moonPos.z + camDist))));
       for (let dy = -mR; dy <= mR; dy++) {
         for (let dx = -mR; dx <= mR; dx++) {
           const d2 = dx * dx + dy * dy;
@@ -947,46 +1741,37 @@ class TempleTerminal {
       }
     };
 
-    // 1. Draw back half of the 3D rotating ring & moon (when behind the main sphere)
     drawRing3D(true);
     if (moonPos.z >= 0) drawOrbitingMoon();
 
-    // 2. 3D Rotating Main Sphere + 3D Inner White Ball/Crater on the sphere's 3D surface
-    // Unit vector of the inner white ball rotating in 3D
     const whiteVecRaw = rotate3D(0.55, -0.45, -0.70);
     const wLen = Math.hypot(whiteVecRaw.nx, whiteVecRaw.ny, whiteVecRaw.nz) || 1;
     const wx = whiteVecRaw.nx / wLen;
     const wy = whiteVecRaw.ny / wLen;
-    const wz = -whiteVecRaw.nz / wLen; // +wz faces viewer
+    const wz = -whiteVecRaw.nz / wLen;
 
     for (let dy = -planetRadius; dy <= planetRadius; dy++) {
       for (let dx = -planetRadius; dx <= planetRadius; dx++) {
         const d2 = dx * dx + dy * dy;
         if (d2 <= planetRadius * planetRadius) {
-          // True 3D spherical normal (nx, ny, nz) at this pixel
           const nx = dx / planetRadius;
           const ny = dy / planetRadius;
           const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
 
-          // 3D dot product with the rotating inner white ball direction
           const dotWhite = nx * wx + ny * wy + nz * wz;
 
           if (dotWhite > 0.86) {
-            // Inside the 3D white ball/crater (curves naturally across the 3D sphere!)
-            // Add 3D inner depth shading near the rim of the white ball
             const innerColor = dotWhite > 0.90 ? 15 : 7;
             this.setFbPixel(cx + dx, cy + dy, innerColor, false);
-          } else if (d2 >= (planetRadius - 1.4) * (planetRadius - 1.4)) {
-            // Outer sphere silhouette edge
+          } else if (d2 >= (planetRadius - 1.6) * (planetRadius - 1.6)) {
             this.setFbPixel(cx + dx, cy + dy, 8, true);
           } else {
-            // 3D directional lighting + rotating 3D longitude/latitude grid cues on the main sphere
             const light = (-nx * 0.35) + (-ny * 0.35) + (nz * 0.85);
-            let sphereColor = 1; // Dark Blue core
+            let sphereColor = 1;
             if (light > 0.88 && ((dx + dy) & 1) === 0) {
-              sphereColor = 9; // 3D specular highlight in Light Blue
+              sphereColor = 9;
             } else if (light < 0.38 && ((dx ^ dy) & 1) === 0) {
-              sphereColor = 8; // 3D shadow limb in Blue-Grey
+              sphereColor = 8;
             }
             this.setFbPixel(cx + dx, cy + dy, sphereColor, false);
           }
@@ -994,14 +1779,9 @@ class TempleTerminal {
       }
     }
 
-    // 3. Draw front half of the 3D rotating ring & moon (when in front of the main sphere)
     drawRing3D(false);
     if (moonPos.z < 0) drawOrbitingMoon();
   }
-
-  /* ==========================================================================
-     Right-Side Flashing Opposite-Color Commands (CREATE, EDIT, EXECUTE, DELETE)
-     ========================================================================== */
 
   renderRightCommandPanel() {
     for (let r = 2; r <= 58; r++) {
@@ -1031,7 +1811,7 @@ class TempleTerminal {
     this.putString(58, 13, 'FILES', 1, 15);
 
     const files = Object.keys(this.lua.files).sort();
-    for (let i = 0; i < Math.min(files.length, 20); i++) {
+    for (let i = 0; i < Math.min(files.length, 12); i++) {
       const f = files[i];
       const inv = this.flashPhase ? (i % 2 === 0) : (i % 2 !== 0);
       const fFg = inv ? 15 : 1;
@@ -1039,13 +1819,8 @@ class TempleTerminal {
       this.putString(58, 14 + i, ` ${f.padEnd(18, ' ')} `, fFg, fBg, 20);
     }
 
-    // Render the 60 FPS Spinning Lua Circle & Ring in the bottom-right corner
     this.renderLuaCircle();
   }
-
-  /* ==========================================================================
-     Shell Screen Renderer
-     ========================================================================== */
 
   renderShellFrame() {
     this.fillBackground(this.defaultBg);
@@ -1074,13 +1849,21 @@ class TempleTerminal {
 
     if (this.scrollOffset === 0) {
       const promptStartRow = screenRow;
+      const hasSel = this.hasShellSelection();
+      const selMin = hasSel ? Math.min(this.shellSelStart, this.shellSelEnd) : -1;
+      const selMax = hasSel ? Math.max(this.shellSelStart, this.shellSelEnd) : -1;
+
       for (let cIdx = 0; cIdx < promptChunks.length; cIdx++) {
         if (promptStartRow + cIdx > 58) break;
         const textChunk = promptChunks[cIdx];
         for (let i = 0; i < textChunk.length; i++) {
           const globalPos = cIdx * paneWidth + i;
           const isPromptPart = globalPos < this.promptText.length;
-          this.putCell(1 + i, promptStartRow + cIdx, textChunk[i], isPromptPart ? 1 : 0, this.defaultBg);
+          const inputIdx = globalPos - this.promptText.length;
+          const isSelected = !isPromptPart && hasSel && inputIdx >= selMin && inputIdx < selMax;
+          const cellFg = isSelected ? 15 : (isPromptPart ? 1 : 0);
+          const cellBg = isSelected ? 9 : this.defaultBg;
+          this.putCell(1 + i, promptStartRow + cIdx, textChunk[i], cellFg, cellBg);
         }
       }
 
@@ -1095,7 +1878,6 @@ class TempleTerminal {
       }
     }
 
-    // Composite pixel graphics layer
     for (let i = 0; i < this.gfxBuffer.length; i++) {
       const c = this.gfxBuffer[i];
       if (c !== 0xFF) {
@@ -1109,10 +1891,6 @@ class TempleTerminal {
     }
   }
 
-  /* ==========================================================================
-     Editor Screen Renderer (Full Syntax Highlighting + Blue/Grey Chrome)
-     ========================================================================== */
-
   colorizeLuaLine(lineText) {
     const chars = [];
     let i = 0;
@@ -1121,8 +1899,10 @@ class TempleTerminal {
       const next = lineText[i + 1];
 
       if (ch === '-' && next === '-') {
+        const isHeaderTag = lineText[i + 2] === '!';
+        const commentFg = isHeaderTag ? 3 : 2;
         while (i < lineText.length) {
-          chars.push({ ch: lineText[i++], fg: 2 });
+          chars.push({ ch: lineText[i++], fg: commentFg });
         }
         break;
       }
@@ -1133,6 +1913,8 @@ class TempleTerminal {
         while (i < lineText.length && lineText[i] !== q) {
           if (lineText[i] === '\\' && i + 1 < lineText.length) {
             chars.push({ ch: lineText[i++], fg: 6 });
+            chars.push({ ch: lineText[i++], fg: 6 });
+            continue;
           }
           chars.push({ ch: lineText[i++], fg: 4 });
         }
@@ -1141,27 +1923,114 @@ class TempleTerminal {
       }
 
       if (/[0-9]/.test(ch)) {
-        while (i < lineText.length && /[0-9.xXa-fA-F]/.test(lineText[i])) {
+        while (i < lineText.length && /[0-9.xXa-fA-FeE+-]/.test(lineText[i])) {
           chars.push({ ch: lineText[i++], fg: 5 });
         }
         continue;
       }
 
       if (/[a-zA-Z_]/.test(ch)) {
+        const startIdx = i;
         let word = '';
         while (i < lineText.length && /[a-zA-Z0-9_]/.test(lineText[i])) {
           word += lineText[i++];
         }
+        let lookahead = i;
+        while (lookahead < lineText.length && lineText[lookahead] === ' ') lookahead++;
+        const isCall = lineText[lookahead] === '(' || lineText[lookahead] === '"' || lineText[lookahead] === '{';
+        const prevChar = startIdx > 0 ? lineText[startIdx - 1] : '';
+
         let fg = 0;
-        if (LUA_KEYWORDS.has(word)) fg = 1;
+        if (LUA_CONTROL_KEYWORDS.has(word)) fg = 5;
+        else if (LUA_STORAGE_KEYWORDS.has(word)) fg = 1;
+        else if (LUA_CONSTANT_KEYWORDS.has(word)) fg = 9;
         else if (LUA_BUILTINS.has(word)) fg = 3;
+        else if (isCall) fg = 6;
+        else if (prevChar === '.' || prevChar === ':') fg = 3;
+
         for (const wc of word) chars.push({ ch: wc, fg });
+        continue;
+      }
+
+      if ('()[]{}'.includes(ch)) {
+        chars.push({ ch: lineText[i++], fg: 1 });
         continue;
       }
 
       chars.push({ ch: lineText[i++], fg: 8 });
     }
     return chars;
+  }
+
+  isCellSelected(row, col, normSel) {
+    if (!normSel) return false;
+    if (row < normSel.startRow || row > normSel.endRow) return false;
+    if (normSel.startRow === normSel.endRow) {
+      return col >= normSel.startCol && col < normSel.endCol;
+    }
+    if (row === normSel.startRow) return col >= normSel.startCol;
+    if (row === normSel.endRow) return col < normSel.endCol;
+    return true;
+  }
+
+  renderEditorSuggestionsPopup(curScreenRow) {
+    if (this.suggestions.length === 0) {
+      this.suggestPopupRect = null;
+      return;
+    }
+
+    const activeItem = this.suggestions[this.suggestIndex] || this.suggestions[0];
+    const curLine = this.edLines[this.edRow] || '';
+    if (
+      activeItem &&
+      this.edCol === curLine.length &&
+      activeItem.label.toLowerCase().startsWith(this.suggestPrefix.toLowerCase())
+    ) {
+      const ghostSuffix = activeItem.insert.split('\n')[0].slice(this.suggestPrefix.length);
+      const startGhostCol = 5 + this.edCol;
+      for (let g = 0; g < ghostSuffix.length && startGhostCol + g <= 77; g++) {
+        this.putCell(startGhostCol + g, curScreenRow, ghostSuffix[g], 7, 15);
+      }
+    }
+
+    const boxW = 26;
+    const boxH = this.suggestions.length + 2;
+    const anchorCol = Math.min(79 - boxW, Math.max(5, 5 + this.suggestStartCol));
+    const anchorRow = (curScreenRow + 1 + boxH <= 55)
+      ? curScreenRow + 1
+      : Math.max(3, curScreenRow - boxH);
+
+    this.suggestPopupRect = {
+      col: anchorCol,
+      row: anchorRow,
+      width: boxW,
+      height: boxH
+    };
+
+    this.putCell(anchorCol, anchorRow, '┌', 1, 15);
+    for (let c = 1; c < boxW - 1; c++) this.putCell(anchorCol + c, anchorRow, '─', 1, 15);
+    this.putCell(anchorCol + boxW - 1, anchorRow, '┐', 1, 15);
+
+    for (let i = 0; i < this.suggestions.length; i++) {
+      const item = this.suggestions[i];
+      const r = anchorRow + 1 + i;
+      const isSelected = i === this.suggestIndex;
+      const rowFg = isSelected ? 15 : 1;
+      const rowBg = isSelected ? 1 : 15;
+      const kindFg = isSelected ? 11 : 8;
+
+      this.putCell(anchorCol, r, '│', 1, 15);
+      const labelText = ` ${item.label}`.slice(0, boxW - 7).padEnd(boxW - 7, ' ');
+      const kindText = `${item.kind.padStart(4, ' ')} `;
+      this.putString(anchorCol + 1, r, labelText, rowFg, rowBg, boxW - 7);
+      this.putString(anchorCol + 1 + labelText.length, r, kindText, kindFg, rowBg, 5);
+      this.putCell(anchorCol + boxW - 1, r, '│', 1, 15);
+    }
+
+    const botR = anchorRow + boxH - 1;
+    this.putCell(anchorCol, botR, '└', 1, 15);
+    for (let c = 1; c < boxW - 1; c++) this.putCell(anchorCol + c, botR, '─', 1, 15);
+    this.putCell(anchorCol + boxW - 1, botR, '┘', 1, 15);
   }
 
   renderEditorFrame() {
@@ -1174,7 +2043,9 @@ class TempleTerminal {
     this.putString(1, 2, tabTitle, 15, 1);
     this.putString(1 + tabTitle.length + 1, 2, this.edStatus, 15, 8, 76 - tabTitle.length);
 
+    const normSel = this.getNormalizedSelection();
     const visibleRows = 53;
+
     for (let i = 0; i < visibleRows; i++) {
       const lineIdx = this.edScrollY + i;
       const screenRow = 3 + i;
@@ -1188,22 +2059,32 @@ class TempleTerminal {
       const numStr = String(lineIdx + 1).padStart(3, ' ') + '│';
       this.putString(1, screenRow, numStr, isCurrentRow ? 1 : 8, 15);
 
-      const colored = this.colorizeLuaLine(this.edLines[lineIdx]);
-      for (let c = 0; c < Math.min(colored.length, 73); c++) {
-        this.putCell(5 + c, screenRow, colored[c].ch, colored[c].fg, 15);
+      const rawLine = this.edLines[lineIdx] || '';
+      const colored = this.colorizeLuaLine(rawLine);
+      const maxCols = Math.max(colored.length + 1, 73);
+
+      for (let c = 0; c < Math.min(maxCols, 73); c++) {
+        const selected = this.isCellSelected(lineIdx, c, normSel);
+        if (c < colored.length) {
+          this.putCell(5 + c, screenRow, colored[c].ch, selected ? 1 : colored[c].fg, selected ? 11 : 15);
+        } else if (selected && c === colored.length) {
+          this.putCell(5 + c, screenRow, ' ', 1, 11);
+        }
       }
     }
 
-    if (this.cursorBlink) {
-      const curScreenRow = 3 + (this.edRow - this.edScrollY);
-      const curScreenCol = 5 + Math.min(73, this.edCol);
-      if (curScreenRow >= 3 && curScreenRow <= 55) {
+    const curScreenRow = 3 + (this.edRow - this.edScrollY);
+    const curScreenCol = 5 + Math.min(73, this.edCol);
+
+    if (curScreenRow >= 3 && curScreenRow <= 55) {
+      this.renderEditorSuggestionsPopup(curScreenRow);
+      if (this.cursorBlink) {
         const ch = (this.edLines[this.edRow] || '')[this.edCol] || ' ';
         this.putCell(curScreenCol, curScreenRow, ch, 15, 1);
       }
     }
 
-    const posInfo = ` Ln ${this.edRow + 1}, Col ${this.edCol + 1} | Lua | UTF-8 `.padEnd(78, ' ');
+    const posInfo = ` Ln ${this.edRow + 1}, Col ${this.edCol + 1} | ^A: Select All | ^C/^V: Copy/Paste | Tab: Jump/Complete `.padEnd(78, ' ');
     this.putString(1, 56, posInfo, 15, 1, 78);
 
     this.putString(1, 57, ' '.repeat(78), 1, 7, 78);
@@ -1213,24 +2094,20 @@ class TempleTerminal {
     this.putString(5, 57, 'Save Browser', 0, 7);
     this.putString(22, 57, 'F5', 15, 1);
     this.putString(25, 57, 'Execute Lua', 0, 7);
-    this.putString(42, 57, '^K', 15, 1);
-    this.putString(45, 57, 'Cut Line', 0, 7);
+    this.putString(42, 57, '^A', 15, 1);
+    this.putString(45, 57, 'Select All', 0, 7);
     this.putString(58, 57, 'File', 15, 1);
     this.putString(63, 57, 'Top-Left Menu', 0, 7);
 
-    this.putString(2, 58, '^O', 15, 1);
-    this.putString(5, 58, 'WriteOut', 0, 7);
+    this.putString(2, 58, '^C', 15, 1);
+    this.putString(5, 58, 'Copy / ^V Paste', 0, 7);
     this.putString(22, 58, '^R', 15, 1);
     this.putString(25, 58, 'Compile+Run', 0, 7);
-    this.putString(42, 58, '^U', 15, 1);
-    this.putString(45, 58, 'UnCut Line', 0, 7);
-    this.putString(58, 58, '^X', 15, 1);
-    this.putString(61, 58, 'Save & Exit', 0, 7);
+    this.putString(42, 58, '^K', 15, 1);
+    this.putString(45, 58, 'Cut Line', 0, 7);
+    this.putString(58, 58, 'Esc', 15, 1);
+    this.putString(62, 58, 'Save & Exit', 0, 7);
   }
-
-  /* ==========================================================================
-     Top-Left File Dropdown Menu Overlay
-     ========================================================================== */
 
   renderFileMenuDropdown() {
     if (!this.fileMenuOpen) return;
@@ -1258,10 +2135,6 @@ class TempleTerminal {
     for (let c = 1; c < w - 1; c++) this.putCell(c, botRow, '─', 15, 1);
     this.putCell(w - 1, botRow, '┘', 15, 1);
   }
-
-  /* ==========================================================================
-     TempleOS Grey Arrow Mouse Cursor with Hover Invert Effect
-     ========================================================================== */
 
   renderTempleMouseCursor() {
     for (let sy = 0; sy < TEMPLE_ARROW_CURSOR.length; sy++) {
@@ -1303,10 +2176,6 @@ class TempleTerminal {
     }
   }
 
-  /* ==========================================================================
-     Main 60fps Framebuffer Loop
-     ========================================================================== */
-
   startRenderLoop() {
     setInterval(() => {
       this.cursorBlink = !this.cursorBlink;
@@ -1315,11 +2184,7 @@ class TempleTerminal {
 
     const tick = () => {
       this.frameCount++;
-
-      // Advance top marquee by 1 pixel per 60fps frame
       this.spinPixelOffset = (this.spinPixelOffset + 1) % (23 * 8);
-
-      // Advance Lua circle & orbital ring rotation at 60fps
       this.orbitAngle += 0.035;
 
       if (this.mode === 'EDITOR') {
