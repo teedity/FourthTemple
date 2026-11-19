@@ -2181,7 +2181,7 @@ class TempleTerminal {
       58,
       20,
       57,
-      'im the best programmer on earth .. ',
+      'do not pay attention',
       -this.spinPixelOffset,
       roll1Fg,
       roll1Bg
@@ -2193,7 +2193,7 @@ class TempleTerminal {
       58,
       20,
       58,
-      'thats why god chose me .. ',
+      'to these these r useless lmao',
       this.spinPixelOffset,
       roll2Fg,
       roll2Bg
@@ -2267,7 +2267,7 @@ class TempleTerminal {
       2,
       53,
       57,
-      'teed the terrible ',
+      'casperitos tostitos skidtitos ',
       this.spinPixelOffset * 2,
       bigFg,
       bigBg
